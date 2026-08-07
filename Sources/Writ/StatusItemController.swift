@@ -13,7 +13,7 @@ extension Notification.Name {
     /// Posted when a system UI is about to open that would otherwise appear
     /// BEHIND our panel. We drop the window level rather than hiding, so the
     /// panel — and the level meter — stay visible alongside it.
-    static let micPriorityYieldPanel = Notification.Name("MicPriorityYieldPanel")
+    static let writYieldPanel = Notification.Name("WritYieldPanel")
 }
 
 @MainActor
@@ -40,7 +40,7 @@ final class StatusItemController: NSObject {
             .store(in: &cancellables)
 
         NotificationCenter.default
-            .publisher(for: .micPriorityYieldPanel)
+            .publisher(for: .writYieldPanel)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.yieldToSystemUI() }
             .store(in: &cancellables)

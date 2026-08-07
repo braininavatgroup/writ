@@ -15,7 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let window = NSWindow(
                 contentRect: NSRect(x: 240, y: 240, width: 340, height: 620),
                 styleMask: [.titled, .closable], backing: .buffered, defer: false)
-            window.title = "MicPriority — preview"
+            window.title = "Writ — preview"
             window.contentView = NSHostingView(rootView: MenuView(model: PriorityModel.shared))
             window.makeKeyAndOrderFront(nil)
             NSApp.setActivationPolicy(.regular)
@@ -27,7 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
-struct MicPriorityApp: App {
+struct WritApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     // The menu bar item and its panel are built in AppKit (see
@@ -538,7 +538,7 @@ struct InputMeter: View {
                         // Apple's picker opens in Control Center, and our panel
                         // sits at .statusBar level — so it must step aside or it
                         // covers the very thing it just opened.
-                        NotificationCenter.default.post(name: .micPriorityYieldPanel, object: nil)
+                        NotificationCenter.default.post(name: .writYieldPanel, object: nil)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                             meter.showModePicker()
                         }

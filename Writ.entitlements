@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      Direct distribution and Setapp: Developer ID + hardened runtime, NOT
+      sandboxed. Sandboxing is only required by the Mac App Store, and it walls
+      the app into its own preferences container — which silently orphaned the
+      user's saved device rankings when the bundle identifier changed. See
+      Writ-appstore.entitlements for the sandboxed variant.
+    -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+</dict>
+</plist>

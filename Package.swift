@@ -2,9 +2,9 @@
 import PackageDescription
 
 let package = Package(
-    name: "MicPriority",
+    name: "Writ",
     platforms: [.macOS(.v13)],
     targets: [
-        .executableTarget(name: "MicPriority", path: "Sources/MicPriority")
+        .executableTarget(name: "Writ", path: "Sources/Writ")
     ]
 )

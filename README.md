@@ -1,7 +1,9 @@
-# Audio Priority
+# Writ
 
 A macOS menu bar app that keeps your audio input and output on the devices you
 actually want, instead of whatever connected most recently.
+
+Your priority list is a standing order the audio system obeys.
 
 macOS has no concept of device priority — it simply switches to the newest
 arrival. This enforces an explicit order, per direction, with rules.
@@ -62,20 +64,47 @@ non-key window, so the switch and segmented picker are custom-drawn.
 source swallows clicks. Reordering uses a plain `DragGesture` on the grip alone,
 with fixed-height rows so the offset maths is exact.
 
+**`MenuBarExtra` cannot be sandboxed into someone else's preferences.** Adding
+`com.apple.security.app-sandbox` confines the app to its own container, so it
+can no longer read the previous bundle identifier's defaults — which silently
+orphaned every saved ranking during the rename. Sandboxing is therefore applied
+only to the Mac App Store build.
+
 ## Build
 
 Requires macOS 13+ and Swift 6.
 
 ```sh
-./build.sh          # produces dist/Audio Priority.app
+./build.sh             # universal (arm64 + x86_64), ad-hoc signed
+./build.sh --fast      # arm64 only, quick local iteration
+./build.sh --release   # Developer ID + hardened runtime, ready to notarise
+./build.sh --appstore  # + App Sandbox, Mac App Store only
 ```
+
+Universal is the default: Setapp requires a fat binary and Intel Macs still run
+macOS 13. There is no runtime cost — Apple silicon executes the arm64 slice.
 
 No third-party dependencies — Apple frameworks only (CoreAudio, AVFoundation,
 AppKit, SwiftUI, IOKit, ServiceManagement).
 
-The build is ad-hoc signed, which is fine locally. Distributing to another
-machine needs a Developer ID certificate and notarisation.
+## Distribution notes
+
+Verified under the App Sandbox on macOS 26 with a signed test bundle:
+
+| operation | sandboxed |
+|---|---|
+| IOKit `AppleClamshellState` read | works |
+| CoreAudio device enumeration | works |
+| CoreAudio default-device **write** | works |
+
+No temporary-exception entitlements needed, so the App Store route is open.
+Setapp requires a notarised, Developer ID signed, universal binary.
+
+The app icon is original artwork. Apple's SF Symbols licence permits symbols
+throughout the UI but forbids them — or confusingly similar glyphs — in app
+icons, logos, or any trademark-related use.
 
 ## Status
 
-Personal tool, works. Not signed for distribution, no license chosen yet.
+Works. Ad-hoc signed for local use; Developer ID signing and notarisation
+required before distribution. No licence chosen yet.

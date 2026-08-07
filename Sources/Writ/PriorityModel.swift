@@ -417,6 +417,7 @@ final class PriorityModel: ObservableObject {
     private func load() {
         let defaults = UserDefaults.standard
         defer { purgeArtifacts() }
+        migrateFromPreviousBundleID()
         // Entries FIRST: assigning `enforcing` fires its didSet → save, which
         // would otherwise persist empty lists over the stored priorities.
         for d in Direction.allCases {
@@ -428,6 +429,36 @@ final class PriorityModel: ObservableObject {
         }
         enforcing = defaults.object(forKey: enforcingKey) as? Bool ?? true
         migrateAirPlayKeys()
+    }
+
+    /// Renaming the app changes its bundle identifier, which means a brand new
+    /// UserDefaults domain — every ranking, label and glyph would silently
+    /// reset. Copy them across once, then leave the old domain alone.
+    private func migrateFromPreviousBundleID() {
+        let defaults = UserDefaults.standard
+        let migratedKey = "migratedFrom.micpriority"
+        guard !defaults.bool(forKey: migratedKey) else { return }
+        guard let old = UserDefaults(suiteName: "dance.braininavat.micpriority") else { return }
+
+        var carried = false
+        for d in Direction.allCases {
+            let key = entriesKey + "." + d.rawValue
+            guard defaults.data(forKey: key) == nil,
+                  let data = old.data(forKey: key) else { continue }
+            defaults.set(data, forKey: key)
+            if let decoded = try? JSONDecoder().decode([PriorityEntry].self, from: data) {
+                var s = state[d] ?? DirectionState()
+                s.entries = decoded
+                state[d] = s
+            }
+            carried = true
+        }
+        if defaults.object(forKey: enforcingKey) == nil,
+           let value = old.object(forKey: enforcingKey) as? Bool {
+            defaults.set(value, forKey: enforcingKey)
+        }
+        defaults.set(true, forKey: migratedKey)
+        if carried { NSLog("Writ: migrated settings from the previous bundle identifier") }
     }
 
     /// Rewrite AirPlay entries saved under a per-session UID onto the stable

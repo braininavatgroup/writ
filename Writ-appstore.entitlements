@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      Verified working under the App Sandbox on macOS 26 with a signed test
+      bundle: IOKit clamshell reads, CoreAudio device enumeration, and CoreAudio
+      default-device WRITES all succeed. No temporary-exception entitlements
+      are required, so the App Store route stays open.
+    -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- Input level metering only. Audio is reduced to an RMS number per
+         buffer and discarded; nothing is recorded, stored or transmitted. -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+</dict>
+</plist>
