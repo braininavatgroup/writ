@@ -6,3 +6,6 @@ build.log
 *.xcuserstate
 .swiftpm/
 AppIcon.iconset/
+
+# Signing material — private keys must never be committed
+.signing/
