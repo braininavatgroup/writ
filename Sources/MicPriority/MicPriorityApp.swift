@@ -144,9 +144,10 @@ struct MenuView: View {
         .onChange(of: model.showing) { new in
             new == .input ? meter.start() : meter.stop()
         }
-        // The engine binds to the default input at start, so a device switch
-        // needs it rebuilt or the meter would keep reading the old device.
-        .onChange(of: model.currentName(.input)) { _ in meter.restart() }
+        // Keyed on the device UID, not the display name: a name can blip to "—"
+        // for an instant while CoreAudio reshuffles, and restarting on that blip
+        // is what produced the runaway meter restart loop.
+        .onChange(of: model.currentUID(.input)) { _ in meter.restartIfDeviceChanged() }
     }
 
     /// The subtitle describes THIS device, not some other one. It previously

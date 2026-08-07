@@ -92,6 +92,8 @@ final class PriorityModel: ObservableObject {
         return s.currentName
     }
 
+    func currentUID(_ d: Direction) -> String { state[d]?.currentUID ?? "" }
+
     func currentIsAnonymousAirPlay(_ d: Direction) -> Bool {
         guard let s = state[d] else { return false }
         guard let entry = s.entries.first(where: { $0.uid == s.currentUID }) else {
@@ -159,9 +161,18 @@ final class PriorityModel: ObservableObject {
         for d in Direction.allCases {
             var s = state[d] ?? DirectionState()
             s.connected = Audio.devices(d)
-            let current = Audio.current(d)
-            s.currentName = current?.name ?? "—"
-            s.currentUID = current?.uid ?? ""
+            if let current = Audio.current(d) {
+                s.currentName = current.name
+                s.currentUID = current.uid
+            } else if s.connected.contains(where: { $0.uid == s.currentUID }) {
+                // The default slot is momentarily held by something we filter
+                // (a metering aggregate). Keep the last real device rather than
+                // reporting "—", which the enforcer would read as "device gone"
+                // and act on.
+            } else {
+                s.currentName = "—"
+                s.currentUID = ""
+            }
 
             // Remember any device we've never seen. Insert it by CLASS rank
             // rather than appending: appending meant a device discovered later
@@ -192,6 +203,9 @@ final class PriorityModel: ObservableObject {
     /// Only act when the device set or lid state actually changes, so a manual
     /// override in System Settings survives until you plug or unplug something.
     private func somethingChanged() {
+        // A drag is mid-flight and holds indices into `entries`. Reordering or
+        // purging underneath it invalidates those indices.
+        guard dragUID == nil else { return }
         refreshDevices()
         sweepDisposables()
         for d in Direction.allCases {
@@ -292,11 +306,17 @@ final class PriorityModel: ObservableObject {
     /// Live reorder while dragging. Deliberately does NOT enforce — switching
     /// the audio device on every row crossed would thrash. The release commits.
     func updateDrag(translation: CGFloat, rowHeight: CGFloat, _ d: Direction) {
-        guard var s = state[d], let uid = dragUID, let origin = dragOriginIndex,
+        guard rowHeight > 0 else { return }
+        guard var s = state[d], !s.entries.isEmpty,
+              let uid = dragUID, let origin = dragOriginIndex,
               let current = s.entries.firstIndex(where: { $0.uid == uid }) else { return }
+        // Re-clamp the origin too: the list can legitimately shrink between the
+        // drag starting and this update (a device disconnecting), which would
+        // otherwise leave a stale index behind.
+        let safeOrigin = min(origin, s.entries.count - 1)
         let steps = Int((translation / rowHeight).rounded())
-        let target = max(0, min(s.entries.count - 1, origin + steps))
-        guard target != current else { return }
+        let target = max(0, min(s.entries.count - 1, safeOrigin + steps))
+        guard target != current, s.entries.indices.contains(current) else { return }
         let moved = s.entries.remove(at: current)
         s.entries.insert(moved, at: target)
         state[d] = s

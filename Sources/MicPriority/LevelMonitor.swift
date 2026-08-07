@@ -1,5 +1,6 @@
 import AVFoundation
 import Combine
+import CoreAudio
 import Foundation
 
 /// Live input level metering.
@@ -31,6 +32,8 @@ final class LevelMonitor: ObservableObject {
     private var engine: AVAudioEngine?
     private var decayTimer: Timer?
     private var lastClipAt: Date?
+    private var starting = false
+    private(set) var boundDeviceID: AudioDeviceID?
 
     func start() {
         guard !running else { return }
@@ -59,17 +62,41 @@ final class LevelMonitor: ObservableObject {
         level = 0; peak = 0; peakDB = -120; clipping = false
     }
 
-    /// The engine binds to whatever the default input device was when it
-    /// started, so a device switch needs a fresh engine.
-    func restart() {
-        guard running else { return }
+    /// Rebuild only when the device we are pinned to genuinely changed.
+    /// Restarting on every observed name change created a feedback loop, since
+    /// starting the engine itself perturbs the device list.
+    func restartIfDeviceChanged() {
+        guard running, !starting else { return }
+        guard let live = Audio.currentDeviceID(.input) else { return }
+        guard live != boundDeviceID else { return }
         stop()
         start()
     }
 
     private func begin() {
+        guard !starting else { return }
+        starting = true
+        defer { starting = false }
+
         let engine = AVAudioEngine()
         let input = engine.inputNode
+
+        // Pin the engine to a SPECIFIC device rather than letting it follow
+        // "the default input". Following the default makes macOS spawn a
+        // CADefaultDeviceAggregate device and hand it the default slot — which
+        // we filter out, so the app saw the input device vanish, restarted the
+        // meter, and spawned another one. That feedback loop is what made the
+        // orange recording indicator flicker and took the app down.
+        if let unit = input.audioUnit, var deviceID = Audio.currentDeviceID(.input) {
+            AudioUnitSetProperty(unit,
+                                 kAudioOutputUnitProperty_CurrentDevice,
+                                 kAudioUnitScope_Global,
+                                 0,
+                                 &deviceID,
+                                 UInt32(MemoryLayout<AudioDeviceID>.size))
+            boundDeviceID = deviceID
+        }
+
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else { return }
 

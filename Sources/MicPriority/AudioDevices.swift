@@ -136,6 +136,21 @@ enum Audio {
         }
     }
 
+    /// Raw default-device ID, without filtering. Needed to pin an audio unit to
+    /// a real device instead of letting it follow "the default".
+    static func currentDeviceID(_ direction: Direction) -> AudioDeviceID? {
+        var addr = AudioObjectPropertyAddress(
+            mSelector: direction.defaultSelector,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        var id = AudioDeviceID(0)
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        guard AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &id) == noErr,
+              id != 0 else { return nil }
+        return id
+    }
+
     static func current(_ direction: Direction) -> AudioDevice? {
         var addr = AudioObjectPropertyAddress(
             mSelector: direction.defaultSelector,
