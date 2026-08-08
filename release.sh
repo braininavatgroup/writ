@@ -35,6 +35,19 @@ if [ "${1:-}" != "--package-only" ]; then
         exit 1
     fi
 
+    # A release must never advertise a build lower than the one already
+    # published: everyone on the higher build would be stranded, since the app
+    # only offers an update when the feed's build EXCEEDS theirs. Nothing about
+    # that failure is visible — those users simply stop receiving releases.
+    PUBLISHED="$(curl -fsS --max-time 10 "https://writ.braininavat.dance/appcast.json" 2>/dev/null \
+                 | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["build"])' 2>/dev/null || echo 0)"
+    CANDIDATE="$(git log -1 --format=%ct)"
+    if [ "$PUBLISHED" != "0" ] && [ "$CANDIDATE" -le "$PUBLISHED" ]; then
+        echo "error: this build ($CANDIDATE) is not newer than the published one ($PUBLISHED)." >&2
+        echo "       Publishing it would strand everyone already on $PUBLISHED." >&2
+        exit 1
+    fi
+
     ./build.sh --release
 
     echo "==> notarising"

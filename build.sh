@@ -18,11 +18,19 @@ APP="Writ.app"
 BUNDLE_ID="dance.braininavat.writ"
 MODE="${1:-}"
 
-# Version lives in one file. CFBundleVersion is the commit count, which is
-# monotonic, needs no bookkeeping, and is what the updater compares — version
-# STRINGS must never be compared, because "1.10" sorts below "1.9" as text.
+# Version lives in one file. CFBundleVersion is the COMMIT TIMESTAMP, and the
+# updater compares that — version STRINGS must never be compared, because "1.10"
+# sorts below "1.9" as text.
+#
+# It was the commit count, which is not monotonic once branches are squash-
+# merged: a build cut from a branch counts the branch's commits, and main counts
+# one commit for the whole squashed merge. A branch build genuinely produced 20
+# while the main it merged into produced 18 — publish that and everyone who took
+# 20 is stranded, because no future main build can ever exceed it.
+#
+# A commit timestamp only ever increases, whatever the branch topology.
 VERSION="$(cat VERSION)"
-BUILD="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
+BUILD="$(git log -1 --format=%ct 2>/dev/null || echo 1)"
 
 # Both keys are optional and both gate a feature: with no feed URL the app makes
 # no network requests and hides "Check for Updates", and with no support address

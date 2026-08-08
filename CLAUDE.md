@@ -20,9 +20,19 @@ pkill -f '/Applications/Writ.app'; rm -rf /Applications/Writ.app
 cp -R dist/Writ.app /Applications/ && open -a /Applications/Writ.app
 ```
 
-Version lives in `VERSION`. `CFBundleVersion` is the git commit count — the
+Version lives in `VERSION`. `CFBundleVersion` is the **commit timestamp** — the
 updater compares that, never the version string, because "1.10" sorts below
 "1.9" as text.
+
+It used to be the commit count, which is *not* monotonic once branches are
+squash-merged: a branch build counts the branch's commits, main counts one for
+the whole squashed merge. A branch build really did produce 20 while the main it
+merged into produced 18. Publishing that strands everyone who took 20, silently
+and permanently, because the app only offers an update when the feed's build
+exceeds theirs. `release.sh` now refuses to publish a build that is not newer
+than the live feed.
+
+**Release only from `main`.**
 
 Two Info.plist keys gate features and are empty by default, so a build makes no
 network requests and offers no support action until they are set:
