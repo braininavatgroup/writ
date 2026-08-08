@@ -72,8 +72,67 @@ if [ "${1:-}" != "--package-only" ]; then
     xcrun stapler staple "dist/Writ-$VERSION.dmg"
 fi
 
+# The update feed, generated rather than hand-edited — a feed whose build number
+# disagrees with the DMG beside it either offers an update that does not exist or
+# hides one that does, and nobody notices until users stop receiving releases.
+echo "==> writing the update feed"
+BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist")"
+
+mkdir -p site/public
+cp "dist/Writ-$VERSION.dmg" site/public/
+python3 - "$VERSION" "$BUILD" <<'PY'
+import json, re, sys
+
+version, build = sys.argv[1], int(sys.argv[2])
+
+# These notes are shown verbatim in an alert, so they have to read as prose.
+# Naive line-slicing produced headings, half-sentences and the indentation of
+# wrapped Markdown — take whole bullets, unwrap them, and drop the syntax.
+lines, section = open("CHANGELOG.md").read().splitlines(), False
+bullets, current = [], None
+for line in lines:
+    if line.startswith("## "):
+        if section:
+            break            # next version — stop at the first section only
+        section = True
+        continue
+    if not section or line.startswith("#"):
+        continue
+    if line.startswith("- "):
+        if current:
+            bullets.append(current)
+        current = line[2:].strip()
+    elif line.strip() and current:
+        current += " " + line.strip()   # continuation of a wrapped bullet
+    elif not line.strip() and current:
+        bullets.append(current)
+        current = None
+if current:
+    bullets.append(current)
+
+def clean(text):
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)   # bold
+    text = re.sub(r"`(.+?)`", r"\1", text)         # code
+    return re.sub(r"\s+", " ", text).strip()
+
+notes = "\n".join("• " + clean(b) for b in bullets[:6]) or f"Writ {version}"
+
+feed = {
+    "version": version,
+    "build": build,
+    "url": f"https://writ.braininavat.dance/Writ-{version}.dmg",
+    "notes": notes,
+}
+with open("site/public/appcast.json", "w") as f:
+    json.dump(feed, f, indent=2)
+    f.write("\n")
+print(f"    site/public/appcast.json  ->  {version} build {build}, {len(bullets)} notes")
+PY
+
 echo
 echo "==> shippable:"
 ls -lh "dist/Writ-$VERSION.dmg" "dist/Writ-$VERSION.zip" | awk '{print "    " $9, $5}'
 echo "    sha256 (dmg): $(shasum -a 256 "dist/Writ-$VERSION.dmg" | cut -d' ' -f1)"
 echo "    sha256 (zip): $(shasum -a 256 "dist/Writ-$VERSION.zip" | cut -d' ' -f1)"
+echo
+echo "==> to publish:  cd site && wrangler pages deploy public --project-name biv-writ"

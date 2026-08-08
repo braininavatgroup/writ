@@ -1,0 +1,6 @@
+{
+  "version": "1.0",
+  "build": 15,
+  "url": "https://writ.braininavat.dance/Writ-1.0.dmg",
+  "notes": "\u2022 Priority order for input and output devices, enforced continuously. Drag to reorder, click a device to use it now.\n\u2022 Never use \u2014 a hard block, applied automatically to display audio, which otherwise hijacks output the moment a monitor wakes.\n\u2022 Only when the lid is open \u2014 applied automatically to the built-in microphone, which is disconnected in hardware when a MacBook is closed and captures silence while still appearing in every audio menu.\n\u2022 Device memory by identifier, so unplugging something never loses its rank.\n\u2022 Input metering: level, peak hold, rolling average and noise floor, plus a shortcut to Apple's microphone mode picker. Audio is measured and discarded.\n\u2022 Per-device custom label and SF Symbol."
+}

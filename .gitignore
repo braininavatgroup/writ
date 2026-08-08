@@ -10,3 +10,7 @@ AppIcon.iconset/
 
 # Signing material — private keys must never be committed
 .signing/
+
+# Release artefacts staged for the site — the DMG is built, not tracked
+site/public/*.dmg
+site/public/*.zip

@@ -1,0 +1,17 @@
+# Cloudflare Pages project for Writ's downloads and update feed.
+#
+# Public on purpose — unlike every other BiV property, nothing here sits behind
+# Cloudflare Access. An update feed that requires authentication cannot be read
+# by the app, and a download page nobody can reach sells nothing.
+#
+# Deploy:
+#   cd site && wrangler pages deploy public --project-name biv-writ
+#
+# Custom domain, following the documented pattern in
+# "Deployments - where code runs":
+#   POST /accounts/$ACC/pages/projects/biv-writ/domains   {"name":"writ.braininavat.dance"}
+#   POST /zones/$ZONE/dns_records   CNAME writ -> biv-writ.pages.dev, proxied=true
+
+name = "biv-writ"
+pages_build_output_dir = "public"
+compatibility_date = "2026-08-08"
