@@ -9,6 +9,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var statusItem = StatusItemController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Same purpose as --preview: this window is reachable only through the
+        // gear menu of a panel that resists UI automation, so give it a door.
+        if CommandLine.arguments.contains("--shortcuts") {
+            ShortcutWindowController.shared.show()
+            return
+        }
         if CommandLine.arguments.contains("--preview") {
             // Design review only: a normal window, and deliberately NO menu bar
             // item, so a preview instance can never add a second icon.
@@ -241,6 +247,7 @@ struct MenuView: View {
                 Button("Restore Priority Order") {
                     model.refreshDevices(); model.enforceAll(reason: "manual")
                 }
+                Button("Keyboard Shortcuts…") { ShortcutWindowController.shared.show() }
                 Divider()
                 // Only offered when a feed is configured, so a build that
                 // predates the download site shows nothing rather than an

@@ -56,6 +56,14 @@ final class StatusItemController: NSObject {
             .sink { [weak self] _ in self?.yieldToSystemUI() }
             .store(in: &cancellables)
 
+        NotificationCenter.default
+            .publisher(for: .writTogglePanel)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.togglePanel() }
+            .store(in: &cancellables)
+
+        _ = HotkeyManager.shared   // register global shortcuts
+
         // Deferred one turn of the run loop: the status item's window has no
         // real frame until it has been laid out, and FirstRun reads that frame
         // to decide whether the icon is actually reachable.
@@ -133,25 +141,38 @@ final class StatusItemController: NSObject {
         let panel = panel ?? makePanel()
         self.panel = panel
 
-        guard let button = statusItem?.button, let buttonWindow = button.window else { return }
-        let size = panel.contentView?.fittingSize ?? NSSize(width: 328, height: 520)
-        panel.setContentSize(size)
-
-        let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        let screen = buttonWindow.screen ?? NSScreen.main
-        var origin = NSPoint(x: buttonRect.midX - size.width / 2,
-                             y: buttonRect.minY - size.height - 6)
-        if let visible = screen?.visibleFrame {
-            origin.x = min(max(visible.minX + 8, origin.x), visible.maxX - size.width - 8)
-            if origin.y < visible.minY + 8 { origin.y = visible.minY + 8 }
-        }
-        panel.setFrameOrigin(origin)
-
         restoreLevel()
         // orderFrontRegardless shows the panel WITHOUT activating this app.
         panel.orderFrontRegardless()
         installOutsideMonitor()
         NotificationCenter.default.post(name: .writPanelDidShow, object: nil)
+        anchorToStatusItem()
+    }
+
+    /// Put the panel under the menu bar item, at whatever size its content
+    /// currently wants.
+    ///
+    /// Called again whenever the content resizes, which it genuinely does while
+    /// open: the meter appears a moment after the panel does, and devices
+    /// connect and disconnect underneath you. Measuring once at open meant the
+    /// panel kept the size the content happened to have at that instant — and
+    /// once closing the panel started stopping the meter, that instant was the
+    /// collapsed one, so it opened too short to be usable.
+    private func anchorToStatusItem() {
+        guard let panel,
+              let button = statusItem?.button,
+              let buttonWindow = button.window else { return }
+
+        let size = panel.frame.size
+        let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+        var origin = NSPoint(x: buttonRect.midX - size.width / 2,
+                             y: buttonRect.minY - size.height - 6)
+
+        if let visible = (buttonWindow.screen ?? NSScreen.main)?.visibleFrame {
+            origin.x = min(max(visible.minX + 8, origin.x), visible.maxX - size.width - 8)
+            if origin.y < visible.minY + 8 { origin.y = visible.minY + 8 }
+        }
+        panel.setFrameOrigin(origin)
     }
 
     private func hide() {
@@ -165,14 +186,14 @@ final class StatusItemController: NSObject {
     }
 
     private func makePanel() -> NSPanel {
-        let hosting = NSHostingView(rootView: PanelRoot(model: PriorityModel.shared))
-        hosting.frame.size = hosting.fittingSize
+        // NSHostingController, not NSHostingView: the controller propagates the
+        // SwiftUI content's preferred size to its window, so the panel tracks
+        // its content automatically instead of being measured once by hand.
+        let controller = NSHostingController(rootView: PanelRoot(model: PriorityModel.shared))
 
         let panel = NSPanel(
-            contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
-            styleMask: [.nonactivatingPanel, .fullSizeContentView, .borderless],
-            backing: .buffered, defer: false)
-        panel.contentView = hosting
+            contentViewController: controller)
+        panel.styleMask = [.nonactivatingPanel, .fullSizeContentView, .borderless]
         panel.isFloatingPanel = true
         panel.level = .statusBar
         panel.hidesOnDeactivate = false
@@ -182,6 +203,16 @@ final class StatusItemController: NSObject {
         panel.hasShadow = true
         panel.isMovable = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
+        // A window resizes from its bottom-left corner, so content growing
+        // downward would walk the panel away from the menu bar item it belongs
+        // to. Re-anchor on every resize instead.
+        NotificationCenter.default
+            .publisher(for: NSWindow.didResizeNotification, object: panel)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.anchorToStatusItem() }
+            .store(in: &cancellables)
+
         return panel
     }
 

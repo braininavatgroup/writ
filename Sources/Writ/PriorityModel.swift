@@ -369,6 +369,24 @@ final class PriorityModel: ObservableObject {
         refreshDevices()
     }
 
+    /// Step to the next connected, eligible device in priority order, wrapping.
+    ///
+    /// Ordered by YOUR list rather than CoreAudio's enumeration, so repeatedly
+    /// pressing the hot key walks the same loop every time instead of a
+    /// different one depending on what was plugged in when.
+    func cycleDevice(_ d: Direction) {
+        guard let s = state[d] else { return }
+        let usable = s.entries.filter { entry in
+            entry.isEligible(lidClosed: lidClosed)
+                && s.connected.contains(where: { $0.uid == entry.uid })
+        }
+        guard usable.count > 1 else { return }
+
+        let current = usable.firstIndex { $0.uid == s.currentUID }
+        let next = usable[((current ?? -1) + 1) % usable.count]
+        selectNow(next, d)
+    }
+
     var canSelect: (PriorityEntry, Direction) -> Bool {
         { [weak self] entry, d in
             guard let self, let s = self.state[d] else { return false }
