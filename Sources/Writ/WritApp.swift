@@ -61,6 +61,7 @@ struct MenuView: View {
                 DirectionPicker(selection: $model.showing)
 
                 nowPlaying
+                qualityWarning
                 priorityList
             }
             .padding(14)
@@ -197,6 +198,51 @@ struct MenuView: View {
                     .frame(width: 20, alignment: .trailing)
             }
             .help(d == .input ? "Input gain" : "Output volume")
+        }
+    }
+
+    /// Bluetooth headphones cannot send and receive in high quality at once, so
+    /// using AirPods as the microphone silently drops everything you hear to
+    /// telephone quality. macOS says nothing about this at all — people just
+    /// conclude their headphones have gone bad.
+    @ViewBuilder
+    private var qualityWarning: some View {
+        if let device = model.bluetoothQualityWarning {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top, spacing: 7) {
+                    Image(systemName: "waveform.badge.exclamationmark")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("\(device) is being used as the microphone")
+                            .font(.system(size: 11, weight: .medium))
+                            .lineLimit(2)
+                        Text("Bluetooth can't do both at once — everything you hear "
+                             + "is at telephone quality until you switch input.")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                if let fix = model.qualityFixInput {
+                    Button {
+                        model.applyQualityFix()
+                    } label: {
+                        Text("Use \(fix.displayName) instead")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.orange, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(9)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.orange.opacity(0.10),
+                        in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityElement(children: .combine)
         }
     }
 

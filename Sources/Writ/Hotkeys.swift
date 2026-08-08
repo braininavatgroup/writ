@@ -86,6 +86,7 @@ struct Shortcut: Codable, Equatable, Hashable {
 /// What a shortcut can do. Raw values are persisted, so they must not change.
 enum HotkeyAction: String, CaseIterable, Identifiable, Codable {
     case toggleMute
+    case pushToTalk
     case togglePanel
     case toggleEnforcing
     case restoreOrder
@@ -94,9 +95,13 @@ enum HotkeyAction: String, CaseIterable, Identifiable, Codable {
 
     var id: String { rawValue }
 
+    /// Held rather than pressed: unmutes while down, restores on release.
+    var isHeld: Bool { self == .pushToTalk }
+
     var title: String {
         switch self {
         case .toggleMute:      return "Mute or unmute the microphone"
+        case .pushToTalk:      return "Push to talk"
         case .togglePanel:     return "Show or hide Writ"
         case .toggleEnforcing: return "Pause or resume enforcing"
         case .restoreOrder:    return "Restore priority order"
@@ -108,6 +113,7 @@ enum HotkeyAction: String, CaseIterable, Identifiable, Codable {
     var detail: String {
         switch self {
         case .toggleMute:      return "Works from any app, including while you're in a call"
+        case .pushToTalk:      return "Hold to unmute, release to go back to muted"
         case .togglePanel:     return "Useful when a menu bar manager has hidden the icon"
         case .toggleEnforcing: return "Stops Writ changing devices until you resume"
         case .restoreOrder:    return "Undoes a device you picked by hand"
@@ -203,24 +209,54 @@ final class HotkeyManager: ObservableObject {
 
     private func installHandler() {
         guard handler == nil else { return }
-        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
-                                 eventKind: UInt32(kEventHotKeyPressed))
+        // Both kinds. Release is what makes push-to-talk possible without ever
+        // asking for Accessibility permission — Carbon reports the release of a
+        // key we already registered, rather than us watching the keyboard.
+        var specs = [
+            EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
+                          eventKind: UInt32(kEventHotKeyPressed)),
+            EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
+                          eventKind: UInt32(kEventHotKeyReleased)),
+        ]
         InstallEventHandler(GetApplicationEventTarget(), { _, event, _ -> OSStatus in
             var id = EventHotKeyID()
             let status = GetEventParameter(event, EventParamName(kEventParamDirectObject),
                                            EventParamType(typeEventHotKeyID), nil,
                                            MemoryLayout<EventHotKeyID>.size, nil, &id)
             guard status == noErr else { return status }
+            let pressed = GetEventKind(event) == UInt32(kEventHotKeyPressed)
             // The Carbon callback is a bare C function and cannot capture self,
             // so it hops back to the main actor and looks the action up there.
-            Task { @MainActor in HotkeyManager.shared.perform(id: id.id) }
+            Task { @MainActor in HotkeyManager.shared.perform(id: id.id, pressed: pressed) }
             return noErr
-        }, 1, &spec, nil, &handler)
+        }, specs.count, &specs, nil, &handler)
     }
 
-    private func perform(id: UInt32) {
+    /// What the microphone was before push-to-talk took over, so releasing puts
+    /// it back exactly rather than assuming it was muted.
+    private var mutedBeforePushToTalk: Bool?
+
+    private func perform(id: UInt32, pressed: Bool) {
         guard let action = registered[id]?.action else { return }
         let model = PriorityModel.shared
+
+        if action.isHeld {
+            if pressed {
+                // Auto-repeat fires press again while held; the first one owns
+                // the saved state or a long hold would record "unmuted" and
+                // release would leave the mic open.
+                if mutedBeforePushToTalk == nil {
+                    mutedBeforePushToTalk = model.isMuted(.input)
+                }
+                model.setMuted(false, .input)
+            } else {
+                model.setMuted(mutedBeforePushToTalk ?? true, .input)
+                mutedBeforePushToTalk = nil
+            }
+            return
+        }
+
+        guard pressed else { return }   // everything else acts once, on press
 
         switch action {
         case .toggleMute:      model.toggleMute(.input)
@@ -229,6 +265,7 @@ final class HotkeyManager: ObservableObject {
         case .restoreOrder:    model.refreshDevices(); model.enforceAll(reason: "hotkey")
         case .cycleInput:      model.cycleDevice(.input)
         case .cycleOutput:     model.cycleDevice(.output)
+        case .pushToTalk:      break    // handled above
         }
     }
 

@@ -50,6 +50,11 @@ final class StatusItemController: NSObject {
             .sink { [weak self] _ in self?.updateGlyph() }
             .store(in: &cancellables)
 
+        PriorityModel.shared.$inputMuted
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.updateGlyph() }
+            .store(in: &cancellables)
+
         NotificationCenter.default
             .publisher(for: .writYieldPanel)
             .receive(on: RunLoop.main)
@@ -104,6 +109,22 @@ final class StatusItemController: NSObject {
         guard let button = statusItem?.button else { return }
         let enforcing = PriorityModel.shared.enforcing
         let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
+
+        // Muted outranks everything else the icon could say. A shortcut that
+        // mutes your microphone from any app, with no visible state, is how you
+        // end up talking to a muted mic — so this takes over the icon entirely
+        // and is the one case where colour is warranted.
+        if PriorityModel.shared.inputMuted {
+            let muted = NSImage(systemSymbolName: "mic.slash.fill",
+                                accessibilityDescription: "Writ — microphone muted")?
+                .withSymbolConfiguration(config)
+            muted?.isTemplate = true
+            button.image = muted
+            button.contentTintColor = .systemRed
+            button.toolTip = "Writ — microphone is MUTED"
+            return
+        }
+        button.contentTintColor = nil
 
         guard let base = NSImage(systemSymbolName: "headset",
                                  accessibilityDescription: "Writ")?
