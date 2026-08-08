@@ -63,6 +63,10 @@ final class PriorityModel: ObservableObject {
     static let shared = PriorityModel()
 
     @Published private(set) var lidClosed: Bool = false
+    /// Mirrored into a published property because the menu bar icon has to show
+    /// it. A shortcut that mutes your microphone from any app is only safe if
+    /// you can see, without opening anything, that it worked.
+    @Published private(set) var inputMuted: Bool = false
     @Published var enforcing: Bool = true { didSet { saveSettings(); enforceAll(reason: "toggled") } }
     @Published var showing: Direction = .input
 
@@ -218,6 +222,7 @@ final class PriorityModel: ObservableObject {
             state[d] = s
         }
         if entriesChanged { saveEntries() }
+        refreshMuteState()
     }
 
     /// Only act when the device set or lid state actually changes, so a manual
@@ -369,6 +374,43 @@ final class PriorityModel: ObservableObject {
         refreshDevices()
     }
 
+    /// The single most common way Mac audio quietly gets worse.
+    ///
+    /// Bluetooth headphones cannot send and receive at the same time in high
+    /// quality. The moment macOS uses AirPods as the microphone, the link drops
+    /// from A2DP to the hands-free profile and everything you hear collapses to
+    /// telephone quality — narrowband, obviously duller. macOS reports nothing;
+    /// people conclude their headphones are broken.
+    ///
+    /// Detected by identity rather than by reading the codec, because the codec
+    /// is not exposed: the same Bluetooth device serving both directions IS the
+    /// condition.
+    var bluetoothQualityWarning: String? {
+        guard let input = state[.input], let output = state[.output],
+              let inDevice = input.connected.first(where: { $0.uid == input.currentUID }),
+              let outDevice = output.connected.first(where: { $0.uid == output.currentUID }),
+              inDevice.kind == .bluetooth, outDevice.kind == .bluetooth,
+              inDevice.name == outDevice.name
+        else { return nil }
+        return inDevice.name
+    }
+
+    /// The highest-ranked connected input that is NOT the Bluetooth device
+    /// currently wrecking output quality.
+    var qualityFixInput: PriorityEntry? {
+        guard let warned = bluetoothQualityWarning, let s = state[.input] else { return nil }
+        return s.entries.first { entry in
+            guard entry.isEligible(lidClosed: lidClosed) else { return false }
+            guard let device = s.connected.first(where: { $0.uid == entry.uid }) else { return false }
+            return device.name != warned
+        }
+    }
+
+    func applyQualityFix() {
+        guard let entry = qualityFixInput else { return }
+        selectNow(entry, .input)
+    }
+
     /// Step to the next connected, eligible device in priority order, wrapping.
     ///
     /// Ordered by YOUR list rather than CoreAudio's enumeration, so repeatedly
@@ -416,10 +458,21 @@ final class PriorityModel: ObservableObject {
     }
 
     func toggleMute(_ d: Direction) {
+        setMuted(!isMuted(d), d)
+    }
+
+    func setMuted(_ muted: Bool, _ d: Direction) {
         guard let s = state[d],
               let device = s.connected.first(where: { $0.uid == s.currentUID }) else { return }
-        Audio.setMuted(!(Audio.isMuted(device, d) ?? false), device, d)
+        Audio.setMuted(muted, device, d)
+        refreshMuteState()
         objectWillChange.send()
+    }
+
+    /// Not every device supports muting — a device with no mute control reports
+    /// unmuted, which is the truth: nothing is muting you.
+    private func refreshMuteState() {
+        inputMuted = isMuted(.input)
     }
 
     func setVolume(_ value: Float, _ d: Direction) {

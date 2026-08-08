@@ -90,7 +90,7 @@ final class ShortcutTests: XCTestCase {
     /// whatever the user had assigned to it.
     func testActionRawValuesAreStable() {
         XCTAssertEqual(Set(HotkeyAction.allCases.map(\.rawValue)),
-                       ["toggleMute", "togglePanel", "toggleEnforcing",
+                       ["toggleMute", "pushToTalk", "togglePanel", "toggleEnforcing",
                         "restoreOrder", "cycleInput", "cycleOutput"])
     }
 
