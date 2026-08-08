@@ -47,8 +47,17 @@ Identity: `Developer ID Application: Bradley Berkman (L65VUZN7VJ)` — team
 DEVELOPER_ID="Developer ID Application: Bradley Berkman (L65VUZN7VJ)" ./release.sh
 ```
 
-That builds, notarises, staples, verifies against Gatekeeper and packages both a
-DMG and a zip. It refuses to run on a dirty tree, because the build number comes
+That builds, notarises, staples, verifies against Gatekeeper, packages both a DMG
+and a zip, and regenerates `site/public/appcast.json`. Publish with:
+
+```sh
+CF=$(security find-generic-password -s 'cloudflare-api-token' -a 'biv' -w)
+CLOUDFLARE_API_TOKEN=$CF CLOUDFLARE_ACCOUNT_ID=YOUR_CLOUDFLARE_ACCOUNT_ID \
+  npx wrangler@4 pages deploy site/public --project-name biv-writ --branch main
+```
+
+Live at `writ.braininavat.dance`. Set `WRIT_UPDATE_FEED` on every release build or
+the resulting app has no updater at all. It refuses to run on a dirty tree, because the build number comes
 from the commit count and would otherwise collide with an existing release.
 
 The first notarisation on a new signing identity is held for in-depth analysis —
