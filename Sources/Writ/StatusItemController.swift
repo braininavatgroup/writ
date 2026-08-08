@@ -105,6 +105,25 @@ final class StatusItemController: NSObject {
     /// Two genuinely distinct glyphs. `headset.slash` does not exist in SF
     /// Symbols (verified), so the disabled state is drawn by striking the
     /// headset through — which reads at a glance far better than dimming it.
+    /// The muted icon, red.
+    ///
+    /// The colour must come from the symbol configuration. A template image is
+    /// stencilled in the menu bar's own colour and IGNORES `contentTintColor`,
+    /// so asking for red that way produced a black glyph — indistinguishable at
+    /// a glance from the normal icon, which defeats the point of showing mute
+    /// state at all. `systemRed` still adapts to light and dark by itself.
+    ///
+    /// Static so a test can render and sample it without a menu bar.
+    static func mutedGlyph() -> NSImage? {
+        let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
+            .applying(NSImage.SymbolConfiguration(paletteColors: [.systemRed]))
+        let image = NSImage(systemSymbolName: "mic.slash.fill",
+                            accessibilityDescription: "Writ — microphone muted")?
+            .withSymbolConfiguration(config)
+        image?.isTemplate = false
+        return image
+    }
+
     private func updateGlyph() {
         guard let button = statusItem?.button else { return }
         let enforcing = PriorityModel.shared.enforcing
@@ -115,16 +134,10 @@ final class StatusItemController: NSObject {
         // end up talking to a muted mic — so this takes over the icon entirely
         // and is the one case where colour is warranted.
         if PriorityModel.shared.inputMuted {
-            let muted = NSImage(systemSymbolName: "mic.slash.fill",
-                                accessibilityDescription: "Writ — microphone muted")?
-                .withSymbolConfiguration(config)
-            muted?.isTemplate = true
-            button.image = muted
-            button.contentTintColor = .systemRed
+            button.image = Self.mutedGlyph()
             button.toolTip = "Writ — microphone is MUTED"
             return
         }
-        button.contentTintColor = nil
 
         guard let base = NSImage(systemSymbolName: "headset",
                                  accessibilityDescription: "Writ")?
