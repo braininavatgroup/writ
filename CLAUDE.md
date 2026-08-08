@@ -103,6 +103,18 @@ Each of these looked like a defect first and cost real time:
   custom-drawn.
 - **`List.onMove` does not work in a menu bar panel**, and a row-wide drag source
   swallows clicks. Drag lives on the grip only, with fixed-height rows.
+- **AppleScript's `keystroke` does not trigger Carbon hot keys.** A registered
+  shortcut that looks completely dead under `osascript` fires correctly from a
+  real `CGEvent` posted to `.cghidEventTap`. Test hot keys with
+  `/tmp/micprobe/postkey`-style CGEvent posting, never with System Events.
+- **System Events cannot see inside the panel.** `count windows` lags reality
+  and `entire contents` comes back empty for the borderless, non-activating
+  panel. Use `CGWindowListCopyWindowInfo` filtered by owner name to find out
+  whether the panel is actually on screen — it is immediate and exact.
+- **The panel must not be sized once.** Its content changes size while open: the
+  meter starts a moment after the panel appears, and devices connect underneath
+  you. It uses `NSHostingController` so the window tracks its content, and
+  re-anchors on resize because windows resize from the bottom-left.
 - **Menu bar managers hide new items.** Bartender parks unknown status items
   off-screen (x ≈ −8500). A missing icon is usually this, not a crash — check
   with the System Events AX query before debugging anything. `FirstRun` detects

@@ -21,6 +21,10 @@ arrival. This enforces an explicit order, per direction, with rules.
 - **Input metering** — level, peak hold, rolling average and noise floor, plus
   Apple's microphone mode (Standard / Voice Isolation / Wide Spectrum)
 - **Per-device icon and label**, chosen from SF Symbols
+- **Global shortcuts** — mute the microphone (⌃⌥⌘M) or open Writ (⌃⌥⌘A) from any
+  app, plus unassigned actions for pausing, restoring the order and cycling
+  devices. Registered through Carbon, so Writ never asks for Accessibility
+  permission and cannot read your keyboard
 - Volume, mute, launch at login
 
 ## Notes from building this
