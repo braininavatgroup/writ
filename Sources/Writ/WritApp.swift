@@ -76,11 +76,15 @@ struct MenuView: View {
                 .foregroundStyle(.tint)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("Audio Priority")
+                Text("Writ")
                     .font(.system(size: 13, weight: .semibold))
-                Text(model.enforcing ? "Enforcing your order" : "Paused")
+                // States the consequence, not the setting. "Paused" alone said
+                // what the switch was, not what it meant for your audio.
+                Text(model.enforcing
+                     ? "Holding input and output to your order"
+                     : "Paused — devices can change freely")
                     .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(model.enforcing ? Color.secondary : Color.orange)
             }
 
             Spacer()
@@ -145,6 +149,15 @@ struct MenuView: View {
         .onDisappear { meter.stop() }
         .onChange(of: model.showing) { new in
             new == .input ? meter.start() : meter.stop()
+        }
+        // onDisappear does NOT fire when the panel's window is ordered out, so
+        // the panel tells us directly. Without this the microphone stayed live —
+        // and the orange indicator lit — for the whole session.
+        .onReceive(NotificationCenter.default.publisher(for: .writPanelDidHide)) { _ in
+            meter.stop()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .writPanelDidShow)) { _ in
+            if model.showing == .input { meter.start() }
         }
         // Keyed on the device UID, not the display name: a name can blip to "—"
         // for an instant while CoreAudio reshuffles, and restarting on that blip

@@ -32,6 +32,17 @@ struct PriorityEntry: Codable, Identifiable, Hashable {
     var displayName: String { customName ?? name }
     /// An unlabelled ephemeral device is disposable; a labelled one is yours.
     var isDisposable: Bool { (ephemeral ?? false) && customName == nil && customSymbol == nil }
+
+    /// May this device be selected at all right now?
+    ///
+    /// One definition, because this rule was written out four separate times —
+    /// in `winner`, `somethingChanged`, `selectNow` and `canSelect` — and four
+    /// copies of a rule is four chances for them to disagree about what a
+    /// blocked device means. Connection state is deliberately NOT part of this:
+    /// it is about the rules you set, not about what happens to be plugged in.
+    func isEligible(lidClosed: Bool) -> Bool {
+        !ignored && !(requiresLidOpen && lidClosed)
+    }
 }
 
 /// Mutable per-direction state. Kept inside the single ObservableObject rather
@@ -146,9 +157,7 @@ final class PriorityModel: ObservableObject {
 
     func winner(_ d: Direction) -> AudioDevice? {
         guard let s = state[d] else { return nil }
-        for entry in s.entries {
-            if entry.ignored { continue }
-            if entry.requiresLidOpen && lidClosed { continue }
+        for entry in s.entries where entry.isEligible(lidClosed: lidClosed) {
             if let device = s.connected.first(where: { $0.uid == entry.uid }) { return device }
         }
         return nil
@@ -157,7 +166,17 @@ final class PriorityModel: ObservableObject {
     // MARK: - Device tracking
 
     func refreshDevices() {
-        lidClosed = LidState.isClosed
+        // Assigning an unchanged @Published value still fires objectWillChange,
+        // which redrew the whole panel every two seconds off the lid poll.
+        let closed = LidState.isClosed
+        if closed != lidClosed { lidClosed = closed }
+
+        // The lid has to be polled (it emits no CoreAudio event), so this runs
+        // every two seconds for as long as the app is open. Writing the entry
+        // list back on every one of those was ~43,000 pointless UserDefaults
+        // encodes a day. Save only when something actually changed.
+        var entriesChanged = false
+
         for d in Direction.allCases {
             var s = state[d] ?? DirectionState()
             s.connected = Audio.devices(d)
@@ -194,10 +213,11 @@ final class PriorityModel: ObservableObject {
                 // ordering you've already made is preserved.
                 let index = s.entries.firstIndex { $0.seedRank > rank } ?? s.entries.count
                 s.entries.insert(entry, at: index)
+                entriesChanged = true
             }
             state[d] = s
         }
-        saveEntries()
+        if entriesChanged { saveEntries() }
     }
 
     /// Only act when the device set or lid state actually changes, so a manual
@@ -219,8 +239,7 @@ final class PriorityModel: ObservableObject {
             // change, so correct that immediately rather than treating it as a
             // manual override to be respected.
             let entry = s.entries.first { $0.uid == s.currentUID }
-            let currentIneligible = (entry?.ignored ?? false)
-                || ((entry?.requiresLidOpen ?? false) && lidClosed)
+            let currentIneligible = entry.map { !$0.isEligible(lidClosed: lidClosed) } ?? false
 
             guard setChanged || currentIneligible else { continue }
             s.lastSignature = signature
@@ -257,10 +276,17 @@ final class PriorityModel: ObservableObject {
             state[d] = s
             return
         }
-        guard winner.name != s.currentName else { return }
+        // Compare by UID. Comparing NAMES meant two devices sharing a name — two
+        // identical USB mics, or two unlabelled "AirPlay" targets — read as
+        // already-selected, and enforcement silently did nothing.
+        guard winner.uid != s.currentUID else { return }
         let from = s.currentName
         if Audio.setCurrent(winner, d) {
             s.currentName = winner.name
+            // Must move together. Leaving the UID stale until the next refresh
+            // made isCurrent() point the "In use" marker at the previous row,
+            // and sent the volume and mute controls to the wrong device.
+            s.currentUID = winner.uid
             s.lastAction = "\(from) → \(winner.name) (\(reason))"
         } else {
             s.lastAction = "failed to select \(winner.name)"
@@ -338,7 +364,7 @@ final class PriorityModel: ObservableObject {
     func selectNow(_ entry: PriorityEntry, _ d: Direction) {
         guard let s = state[d],
               let device = s.connected.first(where: { $0.uid == entry.uid }) else { return }
-        if entry.ignored || (entry.requiresLidOpen && lidClosed) { return }
+        guard entry.isEligible(lidClosed: lidClosed) else { return }
         Audio.setCurrent(device, d)
         refreshDevices()
     }
@@ -347,7 +373,7 @@ final class PriorityModel: ObservableObject {
         { [weak self] entry, d in
             guard let self, let s = self.state[d] else { return false }
             guard s.connected.contains(where: { $0.uid == entry.uid }) else { return false }
-            return !entry.ignored && !(entry.requiresLidOpen && self.lidClosed)
+            return entry.isEligible(lidClosed: self.lidClosed)
         }
     }
 

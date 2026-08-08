@@ -14,6 +14,17 @@ extension Notification.Name {
     /// BEHIND our panel. We drop the window level rather than hiding, so the
     /// panel — and the level meter — stay visible alongside it.
     static let writYieldPanel = Notification.Name("WritYieldPanel")
+
+    /// Posted when the panel is ordered out or back in.
+    ///
+    /// SwiftUI's onAppear/onDisappear do NOT fire for a hosted view when its
+    /// window is merely ordered out — the view hierarchy never changes. Relying
+    /// on them left the microphone tap running after the panel closed, with the
+    /// orange recording indicator lit, for as long as the app was running.
+    /// Measured, not assumed: `kAudioDevicePropertyDeviceIsRunningSomewhere`
+    /// stayed true indefinitely after closing the panel.
+    static let writPanelDidHide = Notification.Name("WritPanelDidHide")
+    static let writPanelDidShow = Notification.Name("WritPanelDidShow")
 }
 
 @MainActor
@@ -87,13 +98,13 @@ final class StatusItemController: NSObject {
         let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
 
         guard let base = NSImage(systemSymbolName: "headset",
-                                 accessibilityDescription: "Audio Priority")?
+                                 accessibilityDescription: "Writ")?
             .withSymbolConfiguration(config) else { return }
 
         if enforcing {
             base.isTemplate = true
             button.image = base
-            button.toolTip = "Audio Priority — enforcing your order"
+            button.toolTip = "Writ — holding input and output to your order"
         } else {
             let size = base.size
             let struck = NSImage(size: size, flipped: false) { rect in
@@ -108,7 +119,7 @@ final class StatusItemController: NSObject {
             }
             struck.isTemplate = true
             button.image = struck
-            button.toolTip = "Audio Priority — paused"
+            button.toolTip = "Writ — paused, devices can change freely"
         }
     }
 
@@ -140,12 +151,17 @@ final class StatusItemController: NSObject {
         // orderFrontRegardless shows the panel WITHOUT activating this app.
         panel.orderFrontRegardless()
         installOutsideMonitor()
+        NotificationCenter.default.post(name: .writPanelDidShow, object: nil)
     }
 
     private func hide() {
         panel?.orderOut(nil)
         if let outsideMonitor { NSEvent.removeMonitor(outsideMonitor) }
         outsideMonitor = nil
+        // Explicit, because ordering the window out does not tell SwiftUI
+        // anything — and a microphone that keeps running after you close the
+        // panel is the one bug this app cannot afford to have.
+        NotificationCenter.default.post(name: .writPanelDidHide, object: nil)
     }
 
     private func makePanel() -> NSPanel {
