@@ -67,7 +67,8 @@ final class StatusItemController: NSObject {
             .sink { [weak self] _ in self?.togglePanel() }
             .store(in: &cancellables)
 
-        _ = HotkeyManager.shared   // register global shortcuts
+        _ = HotkeyManager.shared            // register global shortcuts
+        UpdateCheck.shared.scheduleAutomaticChecks()
 
         // Deferred one turn of the run loop: the status item's window has no
         // real frame until it has been laid out, and FirstRun reads that frame

@@ -9,8 +9,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var statusItem = StatusItemController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Same purpose as --preview: this window is reachable only through the
-        // gear menu of a panel that resists UI automation, so give it a door.
+        // Same family as --preview and --shortcuts: the update flow is reachable
+        // only through the gear menu, and it is the one path that MUST be
+        // exercised end to end before a release rather than reasoned about.
+        if CommandLine.arguments.contains("--check-updates") {
+            statusItem.install()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { UpdateCheck.shared.check() }
+            return
+        }
         if CommandLine.arguments.contains("--shortcuts") {
             ShortcutWindowController.shared.show()
             return
@@ -300,6 +306,9 @@ struct MenuView: View {
                 // action that always fails. See UpdateCheck.
                 if UpdateCheck.feedURL != nil {
                     Button("Check for Updates…") { UpdateCheck.shared.check() }
+                    Toggle("Check Automatically",
+                           isOn: Binding(get: { UpdateCheck.shared.automaticChecks },
+                                         set: { UpdateCheck.shared.automaticChecks = $0 }))
                 }
                 if let support = Support.email {
                     Button("Contact Support…") { Support.compose(to: support) }

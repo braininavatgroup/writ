@@ -1,16 +1,18 @@
 import AppKit
+import Combine
 import Foundation
 
-/// Manual update check against a small JSON feed.
+/// Update checking against a small JSON feed.
 ///
 /// Deliberately dormant: the feed URL is read from the `WritUpdateFeedURL` key
 /// in Info.plist, and if that key is absent the whole feature — including the
 /// menu item — does not exist. A build with no feed makes no network requests
 /// at all, so this can ship before the download site does.
 ///
-/// Manual, not background. An app that watches your microphone has to be
-/// obviously well-behaved about what it sends anywhere, and a menu item you
-/// press is the version of that which needs no explaining.
+/// Checks daily and can be switched off. The request carries no identifier for
+/// the user or the machine, and a check nobody asked for stays silent unless it
+/// actually finds something — an app that watches your microphone has to be
+/// obviously well-behaved about what it sends anywhere.
 @MainActor
 final class UpdateCheck: ObservableObject {
     static let shared = UpdateCheck()
@@ -39,8 +41,55 @@ final class UpdateCheck: ObservableObject {
     }
 
     @Published private(set) var checking = false
+    let installer = Installer()
 
-    func check() {
+    private var timer: Timer?
+    private static let automaticKey = "automaticUpdateChecks"
+    private static let lastCheckKey = "lastUpdateCheck"
+
+    /// On by default, and switchable in the gear menu. An app people install to
+    /// stop babysitting their audio should not need babysitting to stay current.
+    var automaticChecks: Bool {
+        get { UserDefaults.standard.object(forKey: Self.automaticKey) as? Bool ?? true }
+        set {
+            UserDefaults.standard.set(newValue, forKey: Self.automaticKey)
+            objectWillChange.send()
+            scheduleAutomaticChecks()
+        }
+    }
+
+    /// Daily, and never at launch.
+    ///
+    /// Checking on launch would put a network request in the seconds when
+    /// someone is starting a call — the exact moment this app is most needed and
+    /// least allowed to be busy. The first check happens well after startup, and
+    /// only if a day has actually passed.
+    func scheduleAutomaticChecks() {
+        timer?.invalidate()
+        timer = nil
+        guard automaticChecks, Self.feedURL != nil else { return }
+
+        timer = Timer.scheduledTimer(withTimeInterval: 6 * 3600, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.checkIfDue() }
+        }
+        // Deliberately late: launch is the worst moment to make a request.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 300) { [weak self] in
+            Task { @MainActor in self?.checkIfDue() }
+        }
+    }
+
+    private func checkIfDue() {
+        guard automaticChecks else { return }
+        let last = UserDefaults.standard.double(forKey: Self.lastCheckKey)
+        let now = Date().timeIntervalSince1970
+        guard last == 0 || now - last > 24 * 3600 else { return }
+        UserDefaults.standard.set(now, forKey: Self.lastCheckKey)
+        check(silent: true)
+    }
+
+    /// `silent` suppresses "you're up to date" and error alerts — nobody wants a
+    /// dialog from a check they did not ask for. A found update still speaks up.
+    func check(silent: Bool = false) {
         guard !checking, let feed = Self.feedURL else { return }
         checking = true
 
@@ -55,17 +104,21 @@ final class UpdateCheck: ObservableObject {
 
                 guard let data,
                       let release = try? JSONDecoder().decode(Release.self, from: data) else {
-                    self.report(title: "Couldn’t check for updates",
-                                body: error?.localizedDescription
-                                      ?? "The update feed could not be read.")
+                    if !silent {
+                        self.report(title: "Couldn’t check for updates",
+                                    body: error?.localizedDescription
+                                          ?? "The update feed could not be read.")
+                    }
                     return
                 }
 
                 // Compare builds, not version strings: "1.10" sorts before
                 // "1.9" as text and there is no reason to reinvent that.
                 guard release.build > Self.currentBuild else {
-                    self.report(title: "Writ is up to date",
-                                body: "You’re on \(Self.currentVersion).")
+                    if !silent {
+                        self.report(title: "Writ is up to date",
+                                    body: "You’re on \(Self.currentVersion).")
+                    }
                     return
                 }
                 self.offer(release)
@@ -75,15 +128,45 @@ final class UpdateCheck: ObservableObject {
 
     private func offer(_ release: Release) {
         let alert = NSAlert()
-        alert.messageText = "Writ \(release.version) is available"
-        alert.informativeText = release.notes ?? "You’re on \(Self.currentVersion)."
-        alert.addButton(withTitle: "Download")
+        // Two releases can share a marketing version and differ only by build —
+        // a rebuild, or a fix that did not earn a version bump. Announcing
+        // "Writ 1.0 is available" to somebody already running 1.0 reads as a
+        // bug in the updater.
+        let newVersion = release.version != Self.currentVersion
+        alert.messageText = newVersion
+            ? "Writ \(release.version) is available"
+            : "A newer build of Writ \(release.version) is available"
+        alert.informativeText = (release.notes ?? "")
+            + (newVersion ? "\n\nYou’re on \(Self.currentVersion)."
+                          : "\n\nYou’re on build \(Self.currentBuild); this is build \(release.build).")
+        alert.addButton(withTitle: "Install and Relaunch")
         alert.addButton(withTitle: "Later")
         NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertFirstButtonReturn, let url = URL(string: release.url) {
-            NSWorkspace.shared.open(url)
-        }
+
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        installer.install(from: release.url)
+        watchInstall(release)
     }
+
+    /// The installer replaces the running app and relaunches, so success is not
+    /// something this process reports — it simply stops existing. Only failure
+    /// needs to be surfaced, and it must be, or a silently failed update looks
+    /// exactly like a successful one.
+    private func watchInstall(_ release: Release) {
+        var cancellable: AnyCancellable?
+        cancellable = installer.$phase
+            .receive(on: RunLoop.main)
+            .sink { [weak self] phase in
+                guard case .failed(let message) = phase else { return }
+                cancellable?.cancel()
+                self?.report(title: "Couldn’t install Writ \(release.version)", body: message
+                    + "\n\nYour current version is untouched. You can download the "
+                    + "update by hand instead.")
+            }
+        cancellable?.store(in: &installWatch)
+    }
+
+    private var installWatch = Set<AnyCancellable>()
 
     private func report(title: String, body: String) {
         let alert = NSAlert()

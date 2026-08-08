@@ -34,15 +34,23 @@ Deleting the app and that file removes everything Writ has ever kept.
 
 ## Network
 
-Writ makes no network connections in the course of doing its job.
+Writ makes no network connections in the course of managing your audio.
 
-Two features can cause one, both only when you act:
+Two features make them:
 
-- **Check for Updates** — sends an HTTPS request for a small version file. As
-  with any web request, the server can see your IP address and the standard
-  headers your system sends. No identifier for you or your Mac is included, and
-  no record is kept. Builds distributed without an update feed configured cannot
-  make this request at all, and do not show the menu item.
+- **Update checks** — Writ asks a small version file whether a newer release
+  exists, once a day, and whenever you choose Check for Updates. As with any web
+  request the server can see your IP address and the standard headers your
+  system sends; no identifier for you or your Mac is included, and no record is
+  kept. Nothing about your devices, settings or usage is transmitted.
+
+  Switch it off with **Check Automatically** in the gear menu, and Writ will
+  only ask when you do. Builds distributed without an update feed configured
+  cannot make the request at all.
+
+  If you choose to install an update, Writ downloads it and verifies that it was
+  signed by us before replacing anything. A download that fails that check is
+  deleted rather than installed.
 - **Contact Support** — opens a draft in your mail app, pre-filled with your
   Writ version, macOS version, Mac model and audio device names. It is a draft.
   You see all of it, you can edit or delete any of it, and nothing is sent until
