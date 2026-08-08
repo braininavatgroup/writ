@@ -27,6 +27,8 @@ arrival. This enforces an explicit order, per direction, with rules.
   permission and cannot read your keyboard
 - Volume, mute, launch at login
 
+User documentation is `docs/GUIDE.md`. Release notes are `CHANGELOG.md`.
+
 ## Notes from building this
 
 Things that are not obvious, and cost time to discover:
