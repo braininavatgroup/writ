@@ -131,6 +131,8 @@ struct MenuView: View {
                     }
                     .buttonStyle(.plain)
                     .help(model.isMuted(d) ? "Unmute" : "Mute")
+                    .accessibilityLabel(d == .input ? "Mute microphone" : "Mute output")
+                    .accessibilityValue(model.isMuted(d) ? "Muted" : "Unmuted")
                 }
             }
 
@@ -226,6 +228,18 @@ struct MenuView: View {
                 Button("Restore Priority Order") {
                     model.refreshDevices(); model.enforceAll(reason: "manual")
                 }
+                Divider()
+                // Only offered when a feed is configured, so a build that
+                // predates the download site shows nothing rather than an
+                // action that always fails. See UpdateCheck.
+                if UpdateCheck.feedURL != nil {
+                    Button("Check for Updates…") { UpdateCheck.shared.check() }
+                }
+                if let support = Support.email {
+                    Button("Contact Support…") { Support.compose(to: support) }
+                }
+                Button("Writ \(UpdateCheck.currentVersion) (\(UpdateCheck.currentBuild))") {}
+                    .disabled(true)
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 11))
@@ -234,6 +248,7 @@ struct MenuView: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
+            .accessibilityLabel("Writ settings")
 
             Spacer()
 
@@ -292,6 +307,10 @@ struct DeviceRow: View {
                         }
                 )
                 .help("Drag to reorder")
+                // A drag has no keyboard or VoiceOver equivalent, so the grip is
+                // hidden and "Move to Top" in the ••• menu is the accessible
+                // route to the same outcome.
+                .accessibilityHidden(true)
 
             // Click-to-use lives on a real Button, not a tap gesture competing
             // with a drag.
@@ -321,6 +340,13 @@ struct DeviceRow: View {
             }
             .buttonStyle(.plain)
             .disabled(!selectable)
+            // helpText already says the true thing about this row in one
+            // sentence; reuse it rather than writing a second version that can
+            // drift out of step with it.
+            .accessibilityLabel(entry.displayName)
+            .accessibilityValue(accessibilityState)
+            .accessibilityHint(selectable ? "Use this device now" : "")
+            .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
 
             // Exactly one chip, and it always states the CURRENT truth. The old
             // "Lid open" badge described the rule but read as a status claim,
@@ -359,6 +385,7 @@ struct DeviceRow: View {
             .menuIndicator(.hidden)
             .fixedSize()
             .opacity(hovering ? 1 : 0.25)
+            .accessibilityLabel("Options for \(entry.displayName)")
         }
         .padding(.horizontal, 6)
         .frame(height: Self.height)   // fixed height makes the drag maths exact
@@ -417,6 +444,19 @@ struct DeviceRow: View {
     }
 
     private var noteColor: Color { isCurrent ? .green : .secondary }
+
+    /// Everything the chip and the note convey visually, spoken in one phrase —
+    /// VoiceOver users get the rule AND the current state, not just one.
+    private var accessibilityState: String {
+        var parts: [String] = []
+        if isCurrent { parts.append("in use") }
+        if !connected { parts.append("not connected") }
+        if entry.ignored { parts.append("never used") }
+        else if entry.requiresLidOpen {
+            parts.append(lidBlocked ? "unavailable, lid closed" : "only when lid is open")
+        }
+        return parts.joined(separator: ", ")
+    }
 
     private var helpText: String {
         let name = entry.displayName
@@ -483,6 +523,13 @@ struct InputMeter: View {
                 }
             }
             .frame(height: 8)
+            // A bouncing bar says nothing out loud. The peak level is the one
+            // number that answers "is it hearing me?", so that is what it reads.
+            .accessibilityElement()
+            .accessibilityLabel("Input level")
+            .accessibilityValue(meter.peakDB <= -119
+                                ? "silent"
+                                : "peak \(Int(meter.peakDB)) decibels")
 
             HStack(spacing: 4) {
                 if meter.denied {
@@ -558,6 +605,7 @@ struct InputMeter: View {
 /// windows. These draw their own colours so the UI reads as live.
 struct VividSwitch: View {
     @Binding var isOn: Bool
+    var label: String = "Enforce priority order"
 
     var body: some View {
         Button { isOn.toggle() } label: {
@@ -574,6 +622,14 @@ struct VividSwitch: View {
         }
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.15), value: isOn)
+        // Drawing our own control means drawing our own accessibility too:
+        // nothing about a hand-built capsule tells VoiceOver it is a switch.
+        .accessibilityElement()
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
+        .accessibilityValue(isOn ? "On" : "Off")
+        .accessibilityHint(isOn ? "Pauses automatic device switching"
+                                : "Resumes automatic device switching")
     }
 }
 
@@ -594,6 +650,9 @@ struct DirectionPicker: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(direction == .input ? "Input" : "Output")
+                .accessibilityAddTraits(selection == direction ? [.isButton, .isSelected]
+                                                               : .isButton)
             }
         }
         .padding(2)

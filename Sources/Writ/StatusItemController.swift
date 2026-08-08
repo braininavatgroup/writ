@@ -44,6 +44,14 @@ final class StatusItemController: NSObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.yieldToSystemUI() }
             .store(in: &cancellables)
+
+        // Deferred one turn of the run loop: the status item's window has no
+        // real frame until it has been laid out, and FirstRun reads that frame
+        // to decide whether the icon is actually reachable.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            FirstRun.presentIfNeeded(statusButton: item.button) { self.show() }
+        }
     }
 
     /// Drop below Control Center so its picker draws on top, WITHOUT closing —

@@ -5,6 +5,7 @@ let package = Package(
     name: "Writ",
     platforms: [.macOS(.v13)],
     targets: [
-        .executableTarget(name: "Writ", path: "Sources/Writ")
+        .executableTarget(name: "Writ", path: "Sources/Writ"),
+        .testTarget(name: "WritTests", dependencies: ["Writ"], path: "Tests/WritTests"),
     ]
 )

@@ -79,6 +79,9 @@ Requires macOS 13+ and Swift 6.
 ./build.sh --fast      # arm64 only, quick local iteration
 ./build.sh --release   # Developer ID + hardened runtime, ready to notarise
 ./build.sh --appstore  # + App Sandbox, Mac App Store only
+
+swift test --scratch-path .build-test
+./release.sh           # build → notarise → staple → DMG + zip
 ```
 
 Universal is the default: Setapp requires a fat binary and Intel Macs still run
@@ -106,5 +109,12 @@ icons, logos, or any trademark-related use.
 
 ## Status
 
-Works. Ad-hoc signed for local use; Developer ID signing and notarisation
-required before distribution. No licence chosen yet.
+Shippable. Signed with Developer ID, hardened runtime, notarised and stapled, so
+it validates offline and opens with no Gatekeeper warning. `./release.sh`
+produces the DMG.
+
+Not yet sold: there is no purchase gate, no update feed and no support address
+configured. `docs/LAUNCH.md` tracks what remains.
+
+Writ is proprietary — see `LICENSE`. The source is published for reference, not
+for reuse.

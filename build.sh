@@ -18,6 +18,18 @@ APP="Writ.app"
 BUNDLE_ID="dance.braininavat.writ"
 MODE="${1:-}"
 
+# Version lives in one file. CFBundleVersion is the commit count, which is
+# monotonic, needs no bookkeeping, and is what the updater compares — version
+# STRINGS must never be compared, because "1.10" sorts below "1.9" as text.
+VERSION="$(cat VERSION)"
+BUILD="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
+
+# Both keys are optional and both gate a feature: with no feed URL the app makes
+# no network requests and hides "Check for Updates", and with no support address
+# it hides "Contact Support". Ship them empty until the site exists.
+UPDATE_FEED="${WRIT_UPDATE_FEED:-}"
+SUPPORT_EMAIL="${WRIT_SUPPORT_EMAIL:-}"
+
 # Universal by default: Setapp requires a fat binary, and Intel Macs still run
 # macOS 13. There is no runtime cost — Apple silicon executes the arm64 slice
 # and ignores the other. The only price is a couple of MB and a slower build.
@@ -27,9 +39,16 @@ ARCHS=(--arch arm64 --arch x86_64)
 echo "==> compiling ${ARCHS[*]}"
 swift build -c release --scratch-path .build "${ARCHS[@]}"
 
-# A universal build lands in a merged folder; a single-arch build does not.
-BIN=".build/apple/Products/Release/Writ"
-[ -f "$BIN" ] || BIN=".build/release/Writ"
+# A universal build lands in a merged folder, a single-arch build does not — and
+# the merged folder SURVIVES a later single-arch build. Picking it by existence
+# meant --fast silently bundled whatever the last universal build produced, so
+# the path is chosen by mode instead.
+if [ "$MODE" = "--fast" ]; then
+    BIN=".build/release/Writ"
+else
+    BIN=".build/apple/Products/Release/Writ"
+fi
+[ -f "$BIN" ] || { echo "error: no binary at $BIN" >&2; exit 1; }
 
 echo "==> assembling bundle"
 rm -rf "dist/$APP"
@@ -48,12 +67,14 @@ cat > "dist/$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleDisplayName</key>       <string>Writ</string>
     <key>CFBundleIconFile</key>          <string>AppIcon</string>
     <key>CFBundlePackageType</key>       <string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.0</string>
-    <key>CFBundleVersion</key>           <string>1</string>
+    <key>CFBundleShortVersionString</key><string>${VERSION}</string>
+    <key>CFBundleVersion</key>           <string>${BUILD}</string>
     <key>LSMinimumSystemVersion</key>    <string>13.0</string>
     <key>LSUIElement</key>               <true/>
     <key>NSPrincipalClass</key>          <string>NSApplication</string>
-    <key>NSHumanReadableCopyright</key>  <string>Copyright © 2026. All rights reserved.</string>
+    <key>NSHumanReadableCopyright</key>  <string>Copyright © 2026 Bradley Berkman. All rights reserved.</string>
+    <key>WritUpdateFeedURL</key>         <string>${UPDATE_FEED}</string>
+    <key>WritSupportEmail</key>          <string>${SUPPORT_EMAIL}</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Writ shows a live input level so you can confirm your microphone is being heard. Audio is measured and discarded — never recorded, saved or sent anywhere.</string>
 </dict>
@@ -71,14 +92,11 @@ if [ "$MODE" = "--release" ] || [ "$MODE" = "--appstore" ]; then
              --entitlements "$ENTITLEMENTS" \
              -s "$DEVELOPER_ID" "dist/$APP"
     codesign --verify --strict --verbose=2 "dist/$APP"
-    echo "==> next: notarise"
-    echo "    ditto -c -k --keepParent dist/$APP dist/Writ.zip"
-    echo "    xcrun notarytool submit dist/Writ.zip --keychain-profile AC_PASSWORD --wait"
-    echo "    xcrun stapler staple dist/$APP"
+    echo "==> next: ./release.sh   (notarise, staple, package)"
 else
     echo "==> ad-hoc signing (local use only)"
     codesign --force --deep -s - --entitlements "$ENTITLEMENTS" "dist/$APP"
 fi
 
 echo "==> architectures: $(lipo -archs "dist/$APP/Contents/MacOS/Writ")"
-echo "==> done: dist/$APP"
+echo "==> done: dist/$APP  ($VERSION build $BUILD)"
