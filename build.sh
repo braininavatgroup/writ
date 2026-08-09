@@ -32,11 +32,15 @@ MODE="${1:-}"
 VERSION="$(cat VERSION)"
 BUILD="$(git log -1 --format=%ct 2>/dev/null || echo 1)"
 
-# Both keys are optional and both gate a feature: with no feed URL the app makes
-# no network requests and hides "Check for Updates", and with no support address
-# it hides "Contact Support". Ship them empty until the site exists.
-UPDATE_FEED="${WRIT_UPDATE_FEED:-}"
-SUPPORT_EMAIL="${WRIT_SUPPORT_EMAIL:-}"
+# Production configuration, in the repo rather than in whoever's shell history.
+#
+# These were empty by default while nothing was deployed, so a stray build could
+# not phone home. Now that the site exists, empty is the WRONG default: a release
+# cut without them ships with no updater and no support address, and nothing
+# about the resulting build looks wrong. Reproducibility beats caution here —
+# override either to "" for a build that makes no network requests at all.
+UPDATE_FEED="${WRIT_UPDATE_FEED-https://writ.braininavat.dance/appcast.json}"
+SUPPORT_EMAIL="${WRIT_SUPPORT_EMAIL-support@braininavat.systems}"
 
 # Universal by default: Setapp requires a fat binary, and Intel Macs still run
 # macOS 13. There is no runtime cost — Apple silicon executes the arm64 slice

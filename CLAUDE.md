@@ -34,11 +34,16 @@ than the live feed.
 
 **Release only from `main`.**
 
-Two Info.plist keys gate features and are empty by default, so a build makes no
-network requests and offers no support action until they are set:
+Two Info.plist keys gate features. They now **default to the production values**
+in `build.sh`, so `./release.sh` on its own produces a correct release. They were
+empty by default while nothing was deployed; once the site existed that became
+the wrong default, because a release cut without them ships with no updater and
+no support address and looks completely normal.
+
+Override to empty for a build that makes no network requests at all:
 
 ```sh
-WRIT_UPDATE_FEED=https://…/appcast.json WRIT_SUPPORT_EMAIL=support@… ./build.sh --release
+WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= ./build.sh --release
 ```
 
 `--preview` renders the panel in an ordinary window and deliberately installs no
