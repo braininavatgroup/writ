@@ -1,0 +1,16 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+# BRA-10 Stage 4 (D19/B15): workspace-per-issue lifecycle. Workspaces are
+# created from Linear issues so branches are BRA-n-…; archive-on-merge +
+# branch deletion keep nothing lingering after the work closes.
+
+[git]
+archive_on_merge = true
+delete_branch_on_archive = true
+
+[scripts]
+# Pre-archive cleanup (Conductor's native hook): drop stale worktree refs.
+archive = "git worktree prune 2>/dev/null || true"
+
+[prompts]
+create_pr = "Body skeleton is .github/pull_request_template.md — reference it, never duplicate it. Relationships must name the Linear issue (Fixes BRA-n / Refs BRA-n) or the PR must carry the no-issue label. Code repo: include the CHANGELOG.md entry in the same PR, or add the no-changelog label."
