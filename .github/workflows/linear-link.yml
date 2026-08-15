@@ -1,0 +1,11 @@
+name: linear-link
+# Thin caller → canonical lint in biv-scripts (BRA-10 Stage 3, D14/B5).
+# edited/labeled/unlabeled re-run the check when the body or escape labels change.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+jobs:
+  check:
+    uses: braininavatgroup/biv-scripts/.github/workflows/linear-link-reusable.yml@main
+    with:
+      require_changelog: true

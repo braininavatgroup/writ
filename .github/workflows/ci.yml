@@ -1,0 +1,15 @@
+name: ci
+# Minimal deterministic gate so the org ruleset's required `ci` context exists
+# here (BRA-10 Stage 3). Deliberately a no-op: writ has no build/test harness
+# yet — real checks replace this echo when one lands.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "no build/test harness yet"

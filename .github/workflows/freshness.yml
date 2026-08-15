@@ -1,0 +1,14 @@
+name: freshness
+# Thin caller → B8 update loop in biv-scripts (BRA-10 Stage 3). Fires after
+# each merge (push to main) and on approvals; updates the oldest armed PR.
+on:
+  push:
+    branches: [main]
+  pull_request_review:
+    types: [submitted]
+concurrency:
+  group: freshness
+  cancel-in-progress: false
+jobs:
+  update:
+    uses: braininavatgroup/biv-scripts/.github/workflows/update-armed-prs-reusable.yml@main
