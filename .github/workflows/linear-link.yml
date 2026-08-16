@@ -11,6 +11,6 @@ permissions:
   pull-requests: read
 jobs:
   linear-link:
-    uses: braininavatgroup/biv-scripts/.github/workflows/linear-link-reusable.yml@main
+    uses: braininavatgroup/agentic-workflow/.github/workflows/linear-link-reusable.yml@main
     with:
       require_changelog: true
