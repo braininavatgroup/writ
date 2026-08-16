@@ -1,16 +1,27 @@
 "$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
 
-# BRA-10 Stage 4 (D19/B15): workspace-per-issue lifecycle. Workspaces are
-# created from Linear issues so branches are BRA-n-…; archive-on-merge +
-# branch deletion keep nothing lingering after the work closes.
+# BIV-160: local Writ build/test/preview surface. Nonconcurrent mode prevents
+# multiple workspaces from competing for the one menu-bar/audio-device runtime.
 
 [git]
 archive_on_merge = true
 delete_branch_on_archive = true
 
 [scripts]
+run_mode = "nonconcurrent"
 # Pre-archive cleanup (Conductor's native hook): drop stale worktree refs.
 archive = "git worktree prune 2>/dev/null || true"
 
+[scripts.run.preview]
+available_in = [ "local" ]
+command = "WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= ./build.sh --fast && ./dist/Writ.app/Contents/MacOS/Writ --preview"
+default = true
+icon = "play"
+
+[scripts.run.test]
+available_in = [ "local" ]
+command = "swift test --scratch-path .build-test"
+icon = "test-tube"
+
 [prompts]
-create_pr = "Body skeleton is .github/pull_request_template.md — reference it, never duplicate it. Relationships must name the Linear issue (Fixes BRA-n / Refs BRA-n) or the PR must carry the no-issue label. Code repo: include the CHANGELOG.md entry in the same PR, or add the no-changelog label."
+create_pr = "Body skeleton is .github/pull_request_template.md — reference it, never duplicate it. Relationships must name the Linear issue (Fixes BIV-n / Refs BIV-n) or the PR must carry the no-issue label. Code repo: include the CHANGELOG.md entry in the same PR, or add the no-changelog label."
