@@ -1,5 +1,5 @@
 name: red-main
-# Thin caller → red-main filer in biv-scripts (BRA-10 Stage 3). Dormant until
+# Thin caller → red-main filer in agentic-workflow (BRA-10 Stage 3). Dormant until
 # the org secret LINEAR_API_KEY exists.
 on:
   workflow_run:

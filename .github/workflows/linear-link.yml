@@ -1,5 +1,5 @@
 name: linear-link
-# Thin caller → canonical lint in biv-scripts (BRA-10 Stage 3, D14/B5).
+# Thin caller → canonical lint in agentic-workflow (BRA-10 Stage 3, D14/B5).
 # edited/labeled/unlabeled re-run the check when the body or escape labels change.
 # The permissions block must cover the reusable job's requests — a nested job
 # cannot exceed the caller's grant (GitHub validates at startup).

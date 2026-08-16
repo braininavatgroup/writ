@@ -1,5 +1,5 @@
 name: freshness
-# Thin caller → B8 update loop in biv-scripts (BRA-10 Stage 3). Fires after
+# Thin caller → B8 update loop in agentic-workflow (BRA-10 Stage 3). Fires after
 # each merge (push to main) and on approvals; updates the oldest armed PR.
 # The permissions block must cover the reusable job's requests — a nested job
 # cannot exceed the caller's grant (GitHub validates at startup).
