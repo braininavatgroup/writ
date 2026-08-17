@@ -20,4 +20,4 @@ jobs:
       github.event_name == 'pull_request'
       || github.event.action == 'dismissed'
       || github.event.review.state == 'changes_requested'
-    uses: braininavatgroup/biv-scripts/.github/workflows/review-state-reusable.yml@main
+    uses: braininavatgroup/agentic-workflow/.github/workflows/review-state-reusable.yml@main
