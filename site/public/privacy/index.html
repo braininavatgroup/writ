@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Privacy Policy — Writ</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23171715'/%3E%3Cpath d='M7 9l3.2 14h3.4L16 14.4 18.4 23h3.4L25 9h-3.1l-2 9.6L17.4 9h-2.8l-2.5 9.6L10.1 9z' fill='%23f4f0e7'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+  <header class="legal-header"><nav class="wrap legal-nav" aria-label="Policy navigation"><a class="wordmark" href="/">Writ</a><a class="back-link" href="/">Back to Writ</a></nav></header>
+  <main class="legal-main">
+    <p class="eyebrow">Legal</p>
+    <h1>Privacy Policy</h1>
+    <p class="legal-kicker">Last updated: 17 August 2026</p>
+
+    <p>Writ does not create an account or collect analytics, crash reports, or app telemetry. This page exists because payment processors and app marketplaces require one, and because an app that asks for microphone access owes you a specific answer rather than a reassuring one.</p>
+
+    <h2>Microphone</h2>
+    <p>Writ requests microphone access for one purpose: to draw the input level meter, so you can see that your microphone is being heard before you start speaking.</p>
+    <p>Audio is read in short buffers, reduced to a loudness number, and discarded in the same instant. It is never written to disk, never buffered beyond the measurement, never transmitted, and never made available to anything else on your Mac. Nothing is recorded, so there is nothing to store, share or hand over.</p>
+    <p>The meter runs only while the panel is open and showing Input. Closing the panel stops it.</p>
+
+    <h2>What Writ stores</h2>
+    <p>On your Mac only, in standard macOS preferences (<code>~/Library/Preferences/dance.braininavat.writ.plist</code>):</p>
+    <ul>
+      <li>Your priority order for input and output devices</li>
+      <li>Device names, unique identifiers and any custom labels or icons you set</li>
+      <li>Per-device rules (never use / only when the lid is open)</li>
+      <li>Whether enforcement is on, and whether Writ opens at login</li>
+    </ul>
+    <p>Deleting the app and that file removes everything Writ has ever kept.</p>
+
+    <h2>Network</h2>
+    <p>Writ makes no network connections in the course of managing your audio.</p>
+    <p>Two features make them:</p>
+    <ul>
+      <li><strong>Update checks.</strong> Writ asks a small version file whether a newer release exists, once a day, and whenever you choose Check for Updates. As with any web request the server can see your IP address, the standard headers your system sends, and the fact that Writ checked for an update; no persistent identifier for you or your Mac, device details, audio settings, or in-app activity are included, and no record is kept. Switch it off with <strong>Check Automatically</strong> in the gear menu, and Writ will only ask when you do. Builds distributed without an update feed configured cannot make the request at all. If you choose to install an update, Writ downloads it and verifies that it was signed by us before replacing anything. A download that fails that check is deleted rather than installed.</li>
+      <li><strong>Contact Support.</strong> This opens a draft in your mail app, pre-filled with your Writ version, macOS version, Mac model and audio device names. It is a draft. You see all of it, you can edit or delete any of it, and nothing is sent until you send it.</li>
+    </ul>
+
+    <h2>Third parties</h2>
+    <p>Writ contains no third-party code, SDKs, frameworks or trackers. Writ does not send analytics or telemetry about how you use the app. Update checks expose only the ordinary request metadata described above, and Contact Support sends only what you review and choose to send.</p>
+    <p>If you buy Writ, the purchase is handled by a payment provider under their own privacy policy. Writ itself never sees your payment details.</p>
+
+    <h2>Your rights</h2>
+    <p>Because Writ does not retain personal data, there is nothing held about you to access, correct, export or delete. Data stored locally is yours and under your control at all times.</p>
+
+    <h2>Contact</h2>
+    <p>Questions about this policy: see the support address on the <a href="/">Writ download page</a>.</p>
+  </main>
+  <footer class="site-footer"><div class="wrap footer-inner"><strong>Writ</strong><small>© 2026 Brain in a Vat. All rights reserved.</small></div></footer>
+</body>
+</html>

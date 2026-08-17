@@ -1,6 +1,6 @@
 # Writ — End User Licence Agreement
 
-_Last updated: 8 August 2026_
+_Last updated: 17 August 2026_
 
 This is a plain-language licence. It is a real agreement, not a summary of one.
 
@@ -83,7 +83,9 @@ Sections 6 and 7 apply only to the extent that law permits.
 
 ## 9. Privacy
 
-Writ collects no personal data. See PRIVACY.md.
+Writ does not retain personal data or collect analytics, crash reports, or app
+telemetry. Update checks expose ordinary request metadata as described in
+PRIVACY.md.
 
 ## 10. Governing law
 

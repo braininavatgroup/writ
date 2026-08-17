@@ -1,11 +1,11 @@
 # Writ — Privacy Policy
 
-_Last updated: 8 August 2026_
+_Last updated: 17 August 2026_
 
-Writ collects nothing about you. There is no account, no analytics, no crash
-reporting and no telemetry of any kind. This page exists because payment
-processors and app marketplaces require one, and because an app that asks for
-microphone access owes you a specific answer rather than a reassuring one.
+Writ does not create an account or collect analytics, crash reports, or app
+telemetry. This page exists because payment processors and app marketplaces
+require one, and because an app that asks for microphone access owes you a
+specific answer rather than a reassuring one.
 
 ## Microphone
 
@@ -40,9 +40,10 @@ Two features make them:
 
 - **Update checks** — Writ asks a small version file whether a newer release
   exists, once a day, and whenever you choose Check for Updates. As with any web
-  request the server can see your IP address and the standard headers your
-  system sends; no identifier for you or your Mac is included, and no record is
-  kept. Nothing about your devices, settings or usage is transmitted.
+  request the server can see your IP address, the standard headers your system
+  sends, and the fact that Writ checked for an update; no persistent identifier
+  for you or your Mac, device details, audio settings, or in-app activity are
+  included, and no record is kept.
 
   Switch it off with **Check Automatically** in the gear menu, and Writ will
   only ask when you do. Builds distributed without an update feed configured
@@ -58,18 +59,19 @@ Two features make them:
 
 ## Third parties
 
-Writ contains no third-party code, SDKs, frameworks or trackers. Nothing about
-your use of it is shared with anyone, because nothing about your use of it
-leaves your Mac.
+Writ contains no third-party code, SDKs, frameworks or trackers. Writ does not
+send analytics or telemetry about how you use the app. Update checks expose
+only the ordinary request metadata described above, and Contact Support sends
+only what you review and choose to send.
 
 If you buy Writ, the purchase is handled by a payment provider under their own
 privacy policy. Writ itself never sees your payment details.
 
 ## Your rights
 
-Since no personal data is collected or transmitted, there is nothing held about
-you to access, correct, export or delete. Data stored locally is yours and under
-your control at all times.
+Because Writ does not retain personal data, there is nothing held about you to
+access, correct, export or delete. Data stored locally is yours and under your
+control at all times.
 
 ## Contact
 

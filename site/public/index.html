@@ -1,50 +1,115 @@
-<!DOCTYPE html>
-<!--
-  Placeholder. The real landing page is issue #6.
-
-  This exists so the Pages project can be created and the update feed can be
-  served from a real domain before there is anything to sell — the feed is what
-  makes every future release deliverable, and it should not wait on copywriting.
--->
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Writ</title>
-<style>
-  :root { color-scheme: light dark; }
-  body {
-    font: 16px/1.6 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    max-width: 34rem; margin: 12vh auto 4rem; padding: 0 1.5rem;
-  }
-  h1 { font-size: 1.6rem; margin: 0 0 .25rem; letter-spacing: -0.02em; }
-  p.sub { margin: 0 0 2rem; opacity: .65; }
-  ul { padding-left: 1.1rem; }
-  li { margin: .4rem 0; }
-  footer { margin-top: 3rem; font-size: .85rem; opacity: .55; }
-  a { color: inherit; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Writ keeps your Mac on the audio devices that make sense, catches silent inputs, and shows what your microphone is actually hearing.">
+  <meta name="robots" content="noindex">
+  <title>Writ — Audio that stays where you put it</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23171715'/%3E%3Cpath d='M7 9l3.2 14h3.4L16 14.4 18.4 23h3.4L25 9h-3.1l-2 9.6L17.4 9h-2.8l-2.5 9.6L10.1 9z' fill='%23f4f0e7'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/site.css">
 </head>
 <body>
-  <h1>Writ</h1>
-  <p class="sub">Your audio devices, in the order you actually want them.</p>
+  <header class="site-header">
+    <nav class="wrap nav" aria-label="Main navigation">
+      <a class="wordmark" href="#top" aria-label="Writ home">Writ</a>
+      <div class="nav-links">
+        <a href="#details">How it works</a>
+        <a href="#privacy">Privacy</a>
+        <a class="status-pill" href="#availability">Private release</a>
+      </div>
+    </nav>
+  </header>
 
-  <p>
-    macOS has no concept of device priority — it switches to whatever connected
-    most recently, every time. Writ is the standing order that says otherwise.
-  </p>
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div>
+          <p class="eyebrow">A standing order for Mac audio</p>
+          <h1 id="hero-title">Your mic should know when the lid is shut.</h1>
+          <p class="lede">Writ keeps your Mac on the audio devices that make sense, catches silent inputs, and shows you what your microphone is actually hearing.</p>
+        </div>
+        <p class="hero-note">Built for macOS 13 and later. Not publicly released yet.</p>
+      </div>
 
-  <ul>
-    <li>Knows the built-in mic is dead when the lid is shut, and skips it</li>
-    <li>Warns you when Bluetooth is quietly destroying your audio quality</li>
-    <li>Remembers your AirPlay speakers, which macOS does not</li>
-    <li>Mute from anywhere, with the menu bar showing it</li>
-  </ul>
+      <div class="hero-product" aria-label="Illustration of Writ's input panel">
+        <div class="product-panel">
+          <div class="panel-head">
+            <span class="panel-title">Writ <small>· Input</small></span>
+            <span class="toggle" role="img" aria-label="Enforcement on"></span>
+          </div>
+          <div class="device-rows">
+            <div class="device-row">
+              <div class="device"><span class="glyph">USB</span><span><strong>Studio microphone</strong><small>CONNECTED · FIRST CHOICE</small></span></div>
+              <span class="active-dot" aria-label="In use"></span>
+            </div>
+            <div class="device-row">
+              <div class="device"><span class="glyph">MAC</span><span><strong>MacBook microphone</strong><small>ONLY WHEN LID IS OPEN</small></span></div>
+              <span aria-hidden="true">•••</span>
+            </div>
+            <div class="device-row">
+              <div class="device"><span class="glyph">BT</span><span><strong>Headphones</strong><small>CONNECTED</small></span></div>
+              <span aria-hidden="true">•••</span>
+            </div>
+          </div>
+          <div class="meter">
+            <div class="meter-caption"><span>Input signal</span><span>Listening</span></div>
+            <div class="meter-bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="meter-stats"><span>PEAK<b>−6 dB</b></span><span>AVERAGE<b>−18 dB</b></span><span>FLOOR<b>−52 dB</b></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <footer>
-    Not yet released.
-    <a href="/appcast.json">Update feed</a>
+    <section class="proof" id="details" aria-labelledby="details-title">
+      <h2 id="details-title" class="visually-hidden">How Writ helps</h2>
+      <div class="wrap proof-grid">
+        <article>
+          <span class="number">01 / LID</span>
+          <h2>No more silent microphone.</h2>
+          <p>The built-in mic still appears when a MacBook is closed, even though the hardware cannot hear you. Writ knows the difference and skips it.</p>
+        </article>
+        <article>
+          <span class="number">02 / METER</span>
+          <h2>See the room, not just your voice.</h2>
+          <p>Peak, rolling average, and noise floor reveal whether your setup is clean before the call or recording starts. Audio is measured, then discarded.</p>
+        </article>
+        <article>
+          <span class="number">03 / AIRPLAY</span>
+          <h2>AirPlay survives reconnection.</h2>
+          <p>macOS gives speakers temporary identities. Name one once and Writ remembers it without taking you off a speaker you chose on purpose.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="privacy-section" id="privacy" aria-labelledby="privacy-title">
+      <div class="privacy-copy">
+        <p class="eyebrow">Your audio stays on your Mac</p>
+        <h2 id="privacy-title">A microphone utility with no appetite for your data.</h2>
+        <p>No account. No analytics. No crash reporting. The level meter runs only while the input panel is open, and no audio is recorded or transmitted. Automatic update checks make a standard web request, which exposes your IP address and standard headers to the server; they include no device identifier, audio settings, or in-app activity and can be turned off.</p>
+      </div>
+      <div class="privacy-facts" aria-label="Privacy facts">
+        <div><span>Audio recordings</span><b>Never created</b></div>
+        <div><span>Device settings</span><b>Stored locally</b></div>
+        <div><span>Third-party code</span><b>None</b></div>
+        <div><span>Telemetry</span><b>None</b></div>
+      </div>
+    </section>
+
+    <section class="wrap availability" id="availability" aria-labelledby="availability-title">
+      <div>
+        <p class="eyebrow">Availability</p>
+        <h2 id="availability-title">Writ is not publicly released.</h2>
+      </div>
+      <div>
+        <p>The Mac app is being prepared for release. Licensing and public distribution are not open yet.</p>
+        <div class="legal-links"><a href="/privacy/">Privacy policy</a><a href="/eula/">Draft EULA</a></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner"><strong>Writ</strong><small><a href="mailto:support@braininavat.systems">support@braininavat.systems</a> · © 2026 Brain in a Vat. All rights reserved.</small></div>
   </footer>
 </body>
 </html>

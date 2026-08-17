@@ -7,6 +7,7 @@ build.log
 *.xcuserstate
 .swiftpm/
 AppIcon.iconset/
+__pycache__/
 
 # Signing material — private keys must never be committed
 .signing/

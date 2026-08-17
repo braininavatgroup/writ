@@ -1,12 +1,14 @@
-# site — Writ downloads and update feed
+# site — Writ landing, legal, downloads, and update feed
 
-A Cloudflare Pages project serving three things:
+The checked-in artifact for the public `biv-writ` Cloudflare Pages project:
 
 | Path | What |
 |---|---|
+| `/` | Launch landing page in its private-release state |
+| `/privacy/` | Privacy policy |
+| `/eula/` | Draft EULA; not terms for paid distribution |
 | `/appcast.json` | The update feed the app reads |
-| `/Writ-<version>.dmg` | The download |
-| `/` | Landing page (issue #6 — placeholder for now) |
+| `/Writ-<version>.dmg` | The release download |
 
 **Public, with no Cloudflare Access.** Every other BiV property sits behind
 Access; this one cannot. An update feed the app must authenticate to is not an
@@ -18,40 +20,27 @@ update feed, and a download page nobody can reach sells nothing.
 `site/public/`. Then:
 
 ```sh
-cd site && wrangler pages deploy public --project-name biv-writ
+cd site
+wrangler pages deploy public --project-name biv-writ --branch main
 ```
 
 Nothing about a release is automatic. Publishing is a separate, deliberate act
-from building — the same reason the app ships with an empty feed URL until
-someone sets one.
+from building or preparing the site artifact. Do not run this command without
+the separately approved publish action.
 
-## First-time setup
+## Existing production boundary
 
-The project and its custom domain do not exist yet. Following the pattern in
-`Deployments - where code runs`:
+The Pages project and `writ.braininavat.dance` custom domain already exist. The
+update feed and release DMG are live there; a source change under `site/public/`
+does not become live until the separate Pages publish succeeds. Normal releases
+must not recreate the project, custom-domain binding, or DNS record.
 
-```sh
-CF=$(security find-generic-password -s 'cloudflare-api-token' -a 'biv' -w)
-
-# 1. create the Pages project (or let the first `wrangler pages deploy` do it)
-# 2. bind the custom domain
-curl -X POST "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects/biv-writ/domains" \
-     -H "Authorization: Bearer $CF" -H "Content-Type: application/json" \
-     -d '{"name":"writ.braininavat.dance"}'
-# 3. CNAME writ -> biv-writ.pages.dev, proxied
-curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE/dns_records" \
-     -H "Authorization: Bearer $CF" -H "Content-Type: application/json" \
-     -d '{"type":"CNAME","name":"writ","content":"biv-writ.pages.dev","proxied":true}'
-```
-
-Then build the app with the feed pointed at it:
+Production feed and support values are defaults in `build.sh`, so a release does
+not depend on shell history:
 
 ```sh
-WRIT_UPDATE_FEED=https://writ.braininavat.dance/appcast.json \
-WRIT_SUPPORT_EMAIL=... \
 DEVELOPER_ID="Developer ID Application: Bradley Berkman (L65VUZN7VJ)" ./release.sh
 ```
 
-Until that build ships, existing copies have no feed URL compiled in and will
-never find these files. The first release carrying a feed URL is the one that
-makes every release after it updatable — this one cannot update itself.
+For a deliberate build that makes no update or support network request, override
+both defaults to empty as documented in the repository `AGENTS.md`.

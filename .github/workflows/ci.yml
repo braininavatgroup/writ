@@ -1,7 +1,7 @@
 name: ci
 # Minimal deterministic gate so the org ruleset's required `ci` context exists
-# here (BRA-10 Stage 3). Deliberately a no-op: writ has no build/test harness
-# yet — real checks replace this echo when one lands.
+# here (BRA-10 Stage 3). Product-code tests remain local for now; this job runs
+# the dependency-free checks that can execute on Ubuntu.
 on:
   pull_request:
     branches: [main]
@@ -12,4 +12,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "no build/test harness yet"
+      - run: python3 site/test_site_copy.py
