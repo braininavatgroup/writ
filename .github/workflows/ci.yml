@@ -1,7 +1,6 @@
 name: ci
-# Minimal deterministic gate so the org ruleset's required `ci` context exists
-# here (BRA-10 Stage 3). Product-code tests remain local for now; this job runs
-# the dependency-free checks that can execute on Ubuntu.
+# Required deterministic gate for site copy and the ignored-device eligibility
+# contract. The Swift package imports macOS frameworks, so this runs on macOS.
 on:
   pull_request:
     branches: [main]
@@ -9,7 +8,14 @@ on:
     branches: [main]
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: macos-15
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - run: python3 site/test_site_copy.py
+      - name: Verify site copy
+        run: python3 site/test_site_copy.py
+      - name: Verify ignored devices are never eligible
+        run: >-
+          swift test
+          --scratch-path "$RUNNER_TEMP/writ-swift-tests"
+          --filter EligibilityTests.testIgnoredIsBlockedRegardlessOfLid

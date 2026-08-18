@@ -19,7 +19,8 @@ final class EligibilityTests: XCTestCase {
     }
 
     /// "Never use" is a hard block, not a preference — the lid has no bearing
-    /// on it in either direction.
+    /// on it in either direction. This test solely owns that eligibility
+    /// contract; retire it only if the ignored-device feature is removed.
     func testIgnoredIsBlockedRegardlessOfLid() {
         XCTAssertFalse(entry(ignored: true).isEligible(lidClosed: false))
         XCTAssertFalse(entry(ignored: true).isEligible(lidClosed: true))

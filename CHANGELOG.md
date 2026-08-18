@@ -29,6 +29,11 @@ First release.
 - First-run notice, which detects the case where a menu bar manager has parked
   the icon off-screen and says so.
 
+### Changed
+
+- Required CI now executes the ignored-device eligibility contract, preventing
+  a green site-only check from masking a broken **Never use** rule.
+
 ### Distribution
 
 - Launch landing page with stable privacy-policy and draft-EULA URLs. Public
