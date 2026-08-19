@@ -9,6 +9,8 @@ First release.
 
 ### Added
 
+- Repository documentation is directly Obsidian-openable, with an explicit audited record that
+  the archived Agent Workspace assigned zero legacy pages to Writ (BIV-227, #30).
 - Priority order for input and output devices, enforced continuously. Drag to
   reorder, click a device to use it now.
 - **Never use** — a hard block, applied automatically to display audio, which

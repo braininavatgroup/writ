@@ -27,7 +27,12 @@ arrival. This enforces an explicit order, per direction, with rules.
   permission and cannot read your keyboard
 - Volume, mute, launch at login
 
-User documentation is `docs/GUIDE.md`. Release notes are `CHANGELOG.md`.
+`docs/` is Writ's repository-owned Obsidian vault: `docs/GUIDE.md` is user
+documentation, `docs/LAUNCH.md` tracks launch, and `docs/PRIVACY.md` plus
+`docs/EULA.md` own the legal text. Developer guidance remains in `AGENTS.md`,
+release notes in `CHANGELOG.md`, and site documentation in `site/README.md`.
+The provenance audit assigned no legacy Agent Workspace page to Writ, so none
+was imported.
 
 ## Notes from building this
 
