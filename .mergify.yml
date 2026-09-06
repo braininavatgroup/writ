@@ -32,3 +32,14 @@ queue_rules:
     max_checks_retries: 0
     merge_method: squash
     update_method: merge
+
+pull_request_rules:
+  - name: queue on approval
+    conditions:
+      - base = main
+      - -draft
+      - "#approved-reviews-by >= 1"
+      - "#changes-requested-reviews-by = 0"
+    actions:
+      queue:
+        name: default
