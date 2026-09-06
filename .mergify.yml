@@ -24,8 +24,6 @@ queue_rules:
     queue_conditions:
       - base = main
       - -draft
-      - check-success = linear-link / check
-    merge_conditions:
       - check-success = ci
       - check-success = linear-link / check
     batch_size: 1
