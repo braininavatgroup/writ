@@ -10,9 +10,8 @@ The checked-in artifact for the public `biv-writ` Cloudflare Pages project:
 | `/appcast.json` | The update feed the app reads |
 | `/Writ-<version>.dmg` | The release download |
 
-**Public, with no Cloudflare Access.** Every other BiV property sits behind
-Access; this one cannot. An update feed the app must authenticate to is not an
-update feed, and a download page nobody can reach sells nothing.
+**Public, with no access control.** An update feed the app must authenticate to
+is not an update feed, and a download page nobody can reach sells nothing.
 
 ## Releasing
 

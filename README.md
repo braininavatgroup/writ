@@ -27,12 +27,9 @@ arrival. This enforces an explicit order, per direction, with rules.
   permission and cannot read your keyboard
 - Volume, mute, launch at login
 
-`docs/` is Writ's repository-owned Obsidian vault: `docs/GUIDE.md` is user
-documentation, `docs/LAUNCH.md` tracks launch, and `docs/PRIVACY.md` plus
-`docs/EULA.md` own the legal text. Developer guidance remains in `AGENTS.md`,
-release notes in `CHANGELOG.md`, and site documentation in `site/README.md`.
-The provenance audit assigned no legacy Agent Workspace page to Writ, so none
-was imported.
+`docs/GUIDE.md` is the user guide. `docs/PRIVACY.md` and `docs/EULA.md` hold the
+legal text for the packaged app. Developer guidance is in `AGENTS.md`, release
+notes in `CHANGELOG.md`, and the download site in `site/README.md`.
 
 ## Notes from building this
 
@@ -124,8 +121,14 @@ Shippable. Signed with Developer ID, hardened runtime, notarised and stapled, so
 it validates offline and opens with no Gatekeeper warning. `./release.sh`
 produces the DMG.
 
-Not yet sold: there is no purchase gate, no update feed and no support address
-configured. `docs/LAUNCH.md` tracks what remains.
+## Download
 
-Writ is proprietary — see `LICENSE`. The source is published for reference, not
-for reuse.
+Writ is free to download while it is in beta: [writ.braininavat.dance](https://writ.braininavat.dance).
+The app checks that site's update feed for new versions.
+
+## License
+
+The source is published under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+You can read it, build it, and use it for any noncommercial purpose. Commercial
+use, including redistribution for a fee, needs a separate license from the
+author.
