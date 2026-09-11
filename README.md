@@ -3,10 +3,15 @@
 A macOS menu bar app that keeps your audio input and output on the devices you
 actually want, instead of whatever connected most recently.
 
-Your priority list is a standing order the audio system obeys.
+## Download and first run
 
-macOS has no concept of device priority — it simply switches to the newest
-arrival. This enforces an explicit order, per direction, with rules.
+Download the beta for macOS 13 or later at [writ.braininavat.dance](https://writ.braininavat.dance). The packaged app is free during beta. You do not need Xcode or Swift to use it.
+
+Open the downloaded disk image, copy Writ to Applications, and launch it. Writ lives in the menu bar with a headset icon, not in the Dock. If you use a menu bar manager, check its hidden items.
+
+Open Input and Output and drag the device grips into your preferred order. Writ starts enforcing that order while it is running. Display audio starts with "never use", and the built-in microphone starts with "only when the lid is open". Review those defaults for your setup. The [user guide](docs/GUIDE.md) explains pausing enforcement, choosing a device temporarily, and AirPlay behavior.
+
+Microphone permission is for the live input meter. Audio is measured and discarded, not recorded or uploaded. The app checks its update feed; automatic checks can be disabled in the gear menu. See the [privacy policy](docs/PRIVACY.md) for local storage and network behavior.
 
 ## What it does
 
@@ -80,7 +85,9 @@ only to the Mac App Store build.
 
 ## Build
 
-Requires macOS 13+ and Swift 6.
+For source builds, use macOS 13 or later and a Swift 6 toolchain with the macOS SDK. Check `swift --version` and `xcrun --show-sdk-path` before building. Clone this repository and run the commands from its root. The default build produces `dist/Writ.app`; it does not install the app in Applications.
+
+A local build is ad-hoc signed. The release and App Store commands below are for maintainers with their own Apple signing and distribution credentials; cloning the source does not provide those credentials.
 
 ```sh
 ./build.sh             # universal (arm64 + x86_64), ad-hoc signed
@@ -115,16 +122,11 @@ The app icon is original artwork. Apple's SF Symbols licence permits symbols
 throughout the UI but forbids them — or confusingly similar glyphs — in app
 icons, logos, or any trademark-related use.
 
-## Status
+## Reporting bugs and contributing
 
-Shippable. Signed with Developer ID, hardened runtime, notarised and stapled, so
-it validates offline and opens with no Gatekeeper warning. `./release.sh`
-produces the DMG.
+Use this repository's Issues tab for bugs. Include your macOS version, Writ version, whether the problem affects input or output, and the connection types involved. Describe the device selection you expected and the one Writ chose. Remove private device names or other personal information from screenshots and logs.
 
-## Download
-
-Writ is free to download while it is in beta: [writ.braininavat.dance](https://writ.braininavat.dance).
-The app checks that site's update feed for new versions.
+For code changes, run `swift test --scratch-path .build-test` and describe any hardware behavior you verified. Tests cannot prove how every dock, headset, or AirPlay target behaves. Open a focused pull request and avoid publishing signed builds or changing the update feed as part of an ordinary contribution.
 
 ## License
 
