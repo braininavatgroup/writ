@@ -71,9 +71,12 @@ CLOUDFLARE_API_TOKEN=$CF CLOUDFLARE_ACCOUNT_ID=YOUR_CLOUDFLARE_ACCOUNT_ID \
   npx wrangler@4 pages deploy site/public --project-name biv-writ --branch main
 ```
 
-Live at `writ.braininavat.dance`. Set `WRIT_UPDATE_FEED` on every release build or
-the resulting app has no updater at all. It refuses to run on a dirty tree, because the build number comes
-from the commit count and would otherwise collide with an existing release.
+Live at `writ.braininavat.dance`. `build.sh` supplies that site's update feed by
+default. Set `WRIT_UPDATE_FEED` explicitly when building a fork, or set it to an
+empty value to disable update requests. The normal `release.sh` build path
+requires clean source and compares the latest commit timestamp with the live
+feed when it can read that feed. The packaged app uses that timestamp as its
+build number.
 
 The first notarisation on a new signing identity is held for in-depth analysis —
 ours took roughly 26 hours, and a 50 KB hello-world submitted alongside it took
