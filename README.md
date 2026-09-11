@@ -3,6 +3,10 @@
 A macOS menu bar app that keeps your audio input and output on the devices you
 actually want, instead of whatever connected most recently.
 
+<img src="https://raw.githubusercontent.com/braininavatgroup/portfolio/1745bf26735238807ec070b243d70c227097f41b/public/visuals/writ/output-priority.png" width="600" alt="Writ’s Output panel showing a ranked device list, MacBook Air Speakers in use, and devices marked Never." />
+
+Output priorities and per-device rules in Writ. Drag devices into your preferred order; disconnected devices keep their place.
+
 ## Download and first run
 
 Download the beta for macOS 13 or later at [writ.braininavat.dance](https://writ.braininavat.dance). The packaged app is free during beta. You do not need Xcode or Swift to use it.
