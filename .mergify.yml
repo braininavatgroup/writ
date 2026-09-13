@@ -1,0 +1,41 @@
+commands_restrictions:
+  dequeue:
+    conditions:
+      - sender-permission >= write
+  queue:
+    conditions:
+      - sender-permission >= write
+
+merge_queue:
+  checking_label: mergify-checking
+  dequeued_label: mergify-dequeued
+  max_parallel_checks: 1
+  mode: serial
+  queued_label: mergify-queued
+  reset_on_external_merge: always
+  status_comments: outcomes
+
+queue_rules:
+  - name: default
+    queue_conditions:
+      - base = main
+      - -draft
+      - check-success = ci
+    batch_size: 1
+    branch_protection_injection_mode: merge
+    checks_timeout: auto
+    max_checks_retries: 0
+    merge_method: squash
+    update_method: merge
+
+pull_request_rules:
+  - name: queue dependabot Actions updates on green ci
+    conditions:
+      - base = main
+      - -draft
+      - author = dependabot[bot]
+      - head ~= ^dependabot/github_actions/
+      - check-success = ci
+    actions:
+      queue:
+        name: default
