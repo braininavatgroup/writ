@@ -29,9 +29,8 @@ Nothing here limits any fair use rights you have under the law.
 ## 2. What needs a separate licence
 
 Commercial use needs a separate licence. That includes redistributing Writ for a
-fee. The licence does not let you
-sublicense or transfer your rights to anyone else. To ask about a commercial
-licence, contact the address below.
+fee. The licence does not let you sublicense or transfer your rights to anyone
+else. To ask about a commercial licence, contact the address below.
 
 ## 3. Updates
 
