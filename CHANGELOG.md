@@ -38,8 +38,9 @@ First release.
 
 ### Distribution
 
-- Launch landing page with stable privacy-policy and draft-EULA URLs. Public
-  deployment, licensing, and announcement remain separate gated actions.
+- Launch landing page with stable privacy-policy and licence-terms URLs. Writ is
+  free under the PolyForm Noncommercial License 1.0.0 (WRT-2). Public deployment
+  and announcement remain separate gated actions.
 - Universal binary, macOS 13 and later.
 - Signed with Developer ID, hardened runtime, notarised and stapled — validates
   offline and opens with no Gatekeeper warning.

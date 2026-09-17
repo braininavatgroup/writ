@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import unittest
 
 
@@ -65,6 +66,31 @@ class SiteCopyTests(unittest.TestCase):
                     eula,
                 )
                 self.assertIn("Update checks expose ordinary request metadata", eula)
+
+    def test_terms_match_the_free_polyform_noncommercial_license(self) -> None:
+        terms = {
+            "public EULA": (ROOT / "public/eula/index.html").read_text(),
+            "canonical EULA": (REPO_ROOT / "docs/EULA.md").read_text(),
+            "public policy": (ROOT / "public/privacy/index.html").read_text(),
+            "canonical policy": (REPO_ROOT / "docs/PRIVACY.md").read_text(),
+            "landing": (ROOT / "public/index.html").read_text(),
+        }
+        commercial = ["refund", "purchase", "payment provider", "licence key", "If you buy", "you actually paid", "Draft EULA"]
+
+        for name, source in terms.items():
+            with self.subTest(terms=name):
+                text = normalized(source)
+                for phrase in commercial:
+                    self.assertNotIn(phrase, text)
+                self.assertIsNone(re.search(r"\[(?:N|[A-Z]{2,}[^\]]*)\]", text), "bracketed placeholder")
+
+        for name in ("public EULA", "canonical EULA"):
+            with self.subTest(eula=name):
+                eula = normalized(terms[name])
+                self.assertIn("PolyForm Noncommercial License 1.0.0", eula)
+                self.assertIn("Writ is free", eula)
+                self.assertIn("Commercial use needs a separate licence", eula)
+                self.assertIn("support@braininavat.systems", eula)
 
 
 if __name__ == "__main__":
