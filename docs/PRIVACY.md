@@ -1,11 +1,10 @@
 # Writ — Privacy Policy
 
-_Last updated: 17 August 2026_
+_Last updated: 17 September 2026_
 
 Writ does not create an account or collect analytics, crash reports, or app
-telemetry. This page exists because payment processors and app marketplaces
-require one, and because an app that asks for microphone access owes you a
-specific answer rather than a reassuring one.
+telemetry. This page exists because an app that asks for microphone access owes
+you a specific answer rather than a reassuring one.
 
 ## Microphone
 
@@ -63,9 +62,6 @@ Writ contains no third-party code, SDKs, frameworks or trackers. Writ does not
 send analytics or telemetry about how you use the app. Update checks expose
 only the ordinary request metadata described above, and Contact Support sends
 only what you review and choose to send.
-
-If you buy Writ, the purchase is handled by a payment provider under their own
-privacy policy. Writ itself never sees your payment details.
 
 ## Your rights
 

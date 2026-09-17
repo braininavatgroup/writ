@@ -37,8 +37,9 @@ Microphone permission is for the live input meter. Audio is measured and discard
 - Volume, mute, launch at login
 
 `docs/GUIDE.md` is the user guide. `docs/PRIVACY.md` and `docs/EULA.md` hold the
-legal text for the packaged app. Developer guidance is in `AGENTS.md`, release
-notes in `CHANGELOG.md`, and the download site in `site/README.md`.
+legal text for the packaged app, and `docs/LAUNCH.md` the launch checklist.
+Developer guidance is in `AGENTS.md`, release notes in `CHANGELOG.md`, and the
+download site in `site/README.md`.
 
 ## Notes from building this
 

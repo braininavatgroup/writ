@@ -6,7 +6,7 @@ The checked-in artifact for the public `biv-writ` Cloudflare Pages project:
 |---|---|
 | `/` | Launch landing page in its private-release state |
 | `/privacy/` | Privacy policy |
-| `/eula/` | Draft EULA; not terms for paid distribution |
+| `/eula/` | Licence terms: free under PolyForm Noncommercial 1.0.0 |
 | `/appcast.json` | The update feed the app reads |
 | `/Writ-<version>.dmg` | The release download |
 

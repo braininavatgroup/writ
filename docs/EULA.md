@@ -1,61 +1,58 @@
-# Writ — End User Licence Agreement
+# Writ — Licence terms
 
-_Last updated: 17 August 2026_
+_Last updated: 17 September 2026_
 
-This is a plain-language licence. It is a real agreement, not a summary of one.
+Writ is free. The app and its source code are licensed by Bradley Berkman under
+the PolyForm Noncommercial License 1.0.0, published in full in the repository's
+`LICENSE` file and at <https://polyformproject.org/licenses/noncommercial/1.0.0>.
 
-**This is a template and has not been reviewed by a lawyer.** The bracketed
-fields must be filled in, and the terms should be checked against the
-requirements of whichever payment provider and marketplace you sell through
-before you take money.
+This page explains those terms in plain language. It adds no restrictions of its
+own. Where this page and the licence differ, the licence governs.
 
 ---
 
-By installing or using Writ ("the Software") you agree to these terms. If you do
-not agree, do not install it, and request a refund if you have paid.
-
-The Software is licensed to you, not sold. [LICENSOR — legal name and address]
-("we") retains all ownership of it.
-
 ## 1. What you may do
 
-A licence permits one person to install and use the Software on any Mac that
-person owns or controls, for personal or commercial work.
+You may use, copy, modify and share Writ for any noncommercial purpose. That
+includes personal use such as study, private entertainment, hobby projects and
+amateur pursuits, with no anticipated commercial application. Charities,
+educational institutions, public research, public safety or health and
+environmental protection organisations, and government institutions may use it
+for any purpose.
 
-A licence purchased by an organisation permits use by one named individual,
-transferable to a replacement individual if that person leaves.
+If you give anyone a copy of Writ, or of any part of it, you must include the
+licence terms or their URL above, and the `Required Notice:` line from the
+`LICENSE` file.
 
-You may make copies for backup purposes.
+Nothing here limits any fair use rights you have under the law.
 
-## 2. What you may not do
+## 2. What needs a separate licence
 
-You may not redistribute, resell, rent, sublicense or publish the Software; nor
-reverse-engineer, decompile or disassemble it, except where that restriction is
-void under applicable law; nor remove or alter any copyright, trademark or
-licensing notice; nor share a licence key with anyone outside the licence above.
+Commercial use needs a separate licence. That includes using Writ for work you
+are paid for, and redistributing it for a fee. The licence does not let you
+sublicense or transfer your rights to anyone else. To ask about a commercial
+licence, contact the address below.
 
 ## 3. Updates
 
-Your licence includes updates to the Software for [PERIOD — e.g. "all 1.x
-releases" or "12 months from purchase"]. Updates are provided at our discretion;
-nothing here obliges us to produce any particular update or feature.
+Writ may check for and offer updates, which are free. Updates are provided at
+our discretion. Nothing here obliges us to produce any particular update or
+feature.
 
-## 4. Refunds
+## 4. Violations
 
-We offer a full refund within [N] days of purchase, for any reason. Refund
-requests are handled by our payment provider. On refund your licence terminates
-and you must stop using and remove the Software.
+The first time you are notified in writing that you have broken these terms,
+your licence continues if you come into full compliance, and take practical
+steps to correct past violations, within 32 days. Otherwise it ends immediately.
+Making a written claim that Writ infringes a patent ends your patent licence for
+it immediately.
 
-## 5. Termination
+## 5. No warranty and no liability
 
-This licence ends automatically if you breach it. You may end it at any time by
-removing the Software. Sections 6 through 9 survive termination.
-
-## 6. No warranty
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+As far as the law allows, the software comes as is, without any warranty or
+condition, and the licensor will not be liable to you for any damages arising
+out of these terms or the use or nature of the software, under any kind of legal
+claim.
 
 Specifically, and without limiting the above: the Software changes which audio
 devices your Mac uses. We do not warrant that it will select any particular
@@ -65,39 +62,18 @@ broadcast, live performance or any other circumstance where a wrong device
 matters. **Do not rely on it as the only safeguard in a situation where audio
 routing must be correct.** Check your levels.
 
-## 7. Limitation of liability
+## 6. Consumer rights
 
-TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL WE BE LIABLE FOR ANY
-INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL OR PUNITIVE DAMAGES, OR ANY LOSS OF
-PROFITS, REVENUE, DATA, RECORDINGS OR BUSINESS, ARISING OUT OF OR RELATED TO
-YOUR USE OF OR INABILITY TO USE THE SOFTWARE.
+Nothing in these terms excludes or limits any right you have as a consumer that
+cannot be excluded or limited under the law of your country of residence.
+Section 5 applies only to the extent that law permits.
 
-OUR TOTAL AGGREGATE LIABILITY UNDER THIS AGREEMENT SHALL NOT EXCEED THE AMOUNT
-YOU ACTUALLY PAID FOR THE SOFTWARE.
-
-## 8. Consumer rights
-
-Nothing in this agreement excludes or limits any right you have as a consumer
-that cannot be excluded or limited under the law of your country of residence.
-Sections 6 and 7 apply only to the extent that law permits.
-
-## 9. Privacy
+## 7. Privacy
 
 Writ does not retain personal data or collect analytics, crash reports, or app
 telemetry. Update checks expose ordinary request metadata as described in
 PRIVACY.md.
 
-## 10. Governing law
-
-This agreement is governed by the law of [JURISDICTION], without regard to its
-conflict-of-law rules.
-
-## 11. Entire agreement
-
-This is the entire agreement between us regarding the Software and supersedes
-any prior understanding. If any provision is held unenforceable, the rest
-remains in force.
-
 ## Contact
 
-[LICENSOR — support email]
+support@braininavat.systems
