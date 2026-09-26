@@ -1,21 +1,9 @@
 # Writ
 
-Global policy: read [global AGENTS.md](https://github.com/braininavatgroup/dotfiles/blob/14b8f6cf25f9003c654c65f52a5031e094402b90/agents/AGENTS.md), pinned at dotfiles `14b8f6cf` (installed at `~/.codex/AGENTS.md`, a symlink to the durable checkout `~/.local/share/biv/instructions/dotfiles-biv456`; refresh it with `git -C ~/.local/share/biv/instructions/dotfiles-biv456 pull --ff-only origin main`). Adopt newer global policy by bumping that SHA in a reviewed change, not by reading `main`. A difference between the installed copy and the pinned revision means one of the two needs reconciling: bump the pin when dotfiles is ahead, refresh that checkout when the machine is behind. This file owns only repository-specific instructions.
+Writ is a macOS menu bar app that holds a standing priority order for audio input and output devices: Swift, SwiftUI and AppKit, no third-party dependencies, bundle ID `dance.braininavat.writ`.
 
-macOS menu bar app enforcing a standing order for audio input and output
-devices. Swift + SwiftUI + AppKit, no third-party dependencies.
+The check is `python3 site/test_site_copy.py && swift test`. `swift test` needs Xcode, because the Command Line Tools lack the SwiftUI macro plugin; without Xcode, the PR's `ci` run on macos-15 is the proof.
 
-Repo: `braininavatgroup/writ` · Bundle ID: `dance.braininavat.writ`
+Device memory is permanent by design, so anything you filter out of live enumeration must also be purged from saved state, or it never ages out.
 
-Read `docs/development-reference.md` for build, signing, audio verification, and platform constraints.
-
-## Working here
-
-- Sandboxing is **not** the default. It confines the app to its own preferences
-  container and breaks reading the previous bundle ID's defaults. Mac App Store
-  only.
-- Device memory is permanent by design, so bad entries never age out on their
-  own — anything filtered from live enumeration must also be purged from saved
-  state.
-- The app icon must stay original artwork. SF Symbols are fine throughout the
-  UI but forbidden in app icons, logos, or trademark use.
+Sandboxing is only for the Mac App Store build (`./build.sh --appstore`), never the default, and the app icon stays original artwork, never an SF Symbol; build and signing are in `docs/development-reference.md`.

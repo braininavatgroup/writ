@@ -1,6 +1,4 @@
 name: ci
-# Required deterministic gate for site copy and the ignored-device eligibility
-# contract. The Swift package imports macOS frameworks, so this runs on macOS.
 on:
   pull_request:
     branches: [main]
@@ -9,13 +7,7 @@ on:
 jobs:
   ci:
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Verify site copy
-        run: python3 site/test_site_copy.py
-      - name: Verify ignored devices are never eligible
-        run: >-
-          swift test
-          --scratch-path "$RUNNER_TEMP/writ-swift-tests"
-          --filter EligibilityTests.testIgnoredIsBlockedRegardlessOfLid
+      - run: python3 site/test_site_copy.py && swift test
