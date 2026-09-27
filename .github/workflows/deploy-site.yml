@@ -31,23 +31,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx wrangler@4 pages deploy public --project-name biv-writ --branch main
 
-      # The app reads the update feed, so the live proof is that the domain
-      # serves the committed appcast.json byte for byte, and the page answers.
+      # Production must match the commit: appcast.json byte for byte (the app
+      # reads it), every page, and every link and asset those pages load.
       - name: Live check
-        run: |
-          set -euo pipefail
-          base=https://writ.braininavat.dance
-          for attempt in 1 2 3 4 5 6; do
-            if curl -sf "$base/appcast.json?deploy=$GITHUB_SHA" -o "$RUNNER_TEMP/appcast.json" \
-              && cmp -s "$RUNNER_TEMP/appcast.json" site/public/appcast.json; then
-              break
-            fi
-            if [ "$attempt" = 6 ]; then
-              echo "::error::$base/appcast.json does not match the deployed site/public/appcast.json" >&2
-              exit 1
-            fi
-            sleep 10
-          done
-          code=$(curl -s -o /dev/null -w '%{http_code}' "$base/")
-          echo "appcast.json matches the commit; GET / -> $code (expected 200)"
-          test "$code" = 200
+        env:
+          LIVE_ATTEMPTS: 6
+        run: tools/live site

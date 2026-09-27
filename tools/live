@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Read-only check that production matches the committed deployables.
+#   tools/live [site]    one line per check, non-zero exit on any failure
+# LIVE_ATTEMPTS (default 1) retries each check 10s apart, so a deploy job can
+# wait out Cloudflare propagation. New live checks belong here, not inline.
+set -uo pipefail
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+attempts=${LIVE_ATTEMPTS:-1}
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+failures=0
+passes=0
+
+# fetch URL OUT -> prints "status content-type"
+fetch() {
+  curl -sL --max-time 20 -A 'writ-live-check' -o "$2" -w '%{http_code} %{content_type}' "$1" || true
+}
+
+# check NAME FUNC ARGS... ; FUNC prints a detail line and returns 0 on pass
+check() {
+  local name=$1 out i; shift
+  for ((i = 1; i <= attempts; i++)); do
+    if out=$("$@" 2>&1); then
+      echo "PASS $name${out:+ - $out}"; passes=$((passes + 1)); return
+    fi
+    ((i < attempts)) && sleep 10
+  done
+  echo "FAIL $name - $out"; failures=$((failures + 1))
+}
+
+bust() { echo "$1?live=${GITHUB_SHA:-$$}"; }
+
+# A committed file served byte for byte (appcast.json, site.css).
+same_bytes() {
+  local url=$1 file=$2 got
+  got=$(fetch "$(bust "$url")" "$tmp/body")
+  [[ $got == 200\ * ]] || { echo "got $got"; return 1; }
+  cmp -s "$tmp/body" "$file" || { echo "200 but differs from ${file#"$root"/}"; return 1; }
+  echo "200, matches $(basename "$file")"
+}
+
+# A committed page: 200 HTML carrying its committed <title> and <h1>. HTML is
+# not byte-compared because Cloudflare rewrites mailto links on the way out.
+page() {
+  local url=$1 file=$2 got title h1
+  got=$(fetch "$(bust "$url")" "$tmp/page")
+  [[ $got == 200\ text/html* ]] || { echo "got $got"; return 1; }
+  title=$(grep -o '<title>[^<]*</title>' "$file" | head -1)
+  h1=$(tr '\n' ' ' < "$file" | grep -o '<h1[^>]*>[^<]*' | head -1 | sed 's/<h1[^>]*>//')
+  grep -qF "$title" "$tmp/page" || { echo "missing $title"; return 1; }
+  grep -qF "$h1" "$tmp/page" || { echo "missing h1 '$h1'"; return 1; }
+  cp "$tmp/page" "$tmp/live-$(echo "$url" | tr -c 'a-z0-9' _)"
+  echo "200, $title"
+}
+
+# A linked asset. Pages answers unknown paths with index.html and 200, so an
+# asset must not come back as HTML unless it is itself a page.
+asset() {
+  local url=$1 got
+  got=$(fetch "$url" "$tmp/asset")
+  [[ $got == 200\ * ]] || { echo "got $got"; return 1; }
+  if [[ $url == https://writ.braininavat.dance/* && $url != */ && $got == *text/html* ]]; then
+    echo "200 but HTML (Pages fallback: file not deployed)"; return 1
+  fi
+  echo "${got%%;*}"
+}
+
+site() {
+  local base=https://writ.braininavat.dance pub=$root/site/public f path link
+  check "site appcast.json" same_bytes "$base/appcast.json" "$pub/appcast.json"
+  check "site site.css" same_bytes "$base/site.css" "$pub/site.css"
+  while read -r f; do
+    path=/${f#"$pub"/}; path=${path%index.html}
+    check "site page $path" page "$base$path" "$f"
+  done < <(find "$pub" -name '*.html' | sort)
+
+  # Every link and asset on the live pages, including what Cloudflare injects.
+  cat "$tmp"/live-* 2>/dev/null | grep -oE '(href|src)="[^"]*"' | sed -E 's/^[a-z]+="//; s/"$//; s/#.*//' \
+    | grep -vE '^(data:|mailto:|$)|^/cdn-cgi/l/email-protection' | sort -u \
+    | while read -r link; do [[ $link == /* ]] && link=$base$link; echo "$link"; done > "$tmp/links"
+  while read -r link; do check "site link $link" asset "$link"; done < "$tmp/links"
+
+  # The app downloads the appcast's url. Known broken until WRT-1 publishes a
+  # real artifact; reported, not failed, so site deploys aren't blocked.
+  # When WRT-1 lands, make this a check.
+  link=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["url"])' "$pub/appcast.json")
+  if out=$(asset "$link"); then echo "PASS site appcast download $link - $out"
+  else echo "KNOWN site appcast download $link - $out (WRT-1)"; fi
+}
+
+surfaces=("$@")
+[[ ${#surfaces[@]} -eq 0 ]] && surfaces=(site)
+for s in "${surfaces[@]}"; do
+  case $s in
+    site) site ;;
+    *) echo "FAIL unknown surface $s (known: site)"; failures=$((failures + 1)) ;;
+  esac
+done
+echo "live: $passes passed, $failures failed"
+((failures == 0))

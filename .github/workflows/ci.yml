@@ -36,7 +36,7 @@ jobs:
             git ls-files > "$RUNNER_TEMP/changed"
           fi
           changed() { if grep -Eq "$2" "$RUNNER_TEMP/changed"; then echo "$1=true"; else echo "$1=false"; fi >> "$GITHUB_OUTPUT"; }
-          changed site '^(site/|\.github/workflows/deploy-site\.yml$)'
+          changed site '^(site/|tools/live$|\.github/workflows/deploy-site\.yml$)'
 
   # Deploys ship only after the check above passes, from the SHA it tested.
   deploy-site:
