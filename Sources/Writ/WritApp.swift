@@ -301,9 +301,9 @@ struct MenuView: View {
                 }
                 Button("Keyboard Shortcuts…") { ShortcutWindowController.shared.show() }
                 Divider()
-                // Only offered when a feed is configured, so a build that
-                // predates the download site shows nothing rather than an
-                // action that always fails. See UpdateCheck.
+                // Only offered when a feed is configured, so a build made
+                // without one shows nothing rather than an action that always
+                // fails. See UpdateCheck.
                 if UpdateCheck.feedURL != nil {
                     Button("Check for Updates…") { UpdateCheck.shared.check() }
                     Toggle("Check Automatically",

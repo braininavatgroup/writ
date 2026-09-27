@@ -7,7 +7,7 @@ import Foundation
 /// Deliberately dormant: the feed URL is read from the `WritUpdateFeedURL` key
 /// in Info.plist, and if that key is absent the whole feature — including the
 /// menu item — does not exist. A build with no feed makes no network requests
-/// at all, so this can ship before the download site does.
+/// at all.
 ///
 /// Checks daily and can be switched off. The request carries no identifier for
 /// the user or the machine, and a check nobody asked for stays silent unless it

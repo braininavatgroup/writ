@@ -86,7 +86,7 @@ final class PriorityModel: ObservableObject {
             Task { @MainActor in self?.somethingChanged() }
         }
 
-        // The lid emits no CoreAudio event, so poll it. Cheap: one IORegistry read.
+        // WRT-6: replace this poll with an IOPMrootDomain clamshell notification.
         lidTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.somethingChanged() }
         }
@@ -175,10 +175,8 @@ final class PriorityModel: ObservableObject {
         let closed = LidState.isClosed
         if closed != lidClosed { lidClosed = closed }
 
-        // The lid has to be polled (it emits no CoreAudio event), so this runs
-        // every two seconds for as long as the app is open. Writing the entry
-        // list back on every one of those was ~43,000 pointless UserDefaults
-        // encodes a day. Save only when something actually changed.
+        // This runs on every lid poll and device event, so save only when
+        // something actually changed.
         var entriesChanged = false
 
         for d in Direction.allCases {
