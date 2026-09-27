@@ -1,25 +1,53 @@
 name: deploy-site
+
+# site/public to the biv-writ Cloudflare Pages project (writ.braininavat.dance).
+# ci calls this after its check passes on a push to main that changed site/, so
+# the SHA that deploys is the SHA ci tested; ci is the only gate, so there is
+# no test step here. A dispatch re-deploys main by hand.
+
 on:
-  push:
-    branches: [main]
-    paths: ['site/**']
+  workflow_call: {}
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
-  deploy-site:
+  deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    concurrency:
+      group: deploy-site
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-
-      # Same check ci.yml runs for site/, kept here too since this workflow's
-      # own push trigger (path-filtered to site/**) fires independently of ci's.
-      # workflow_dispatch skips the path filter by design, so this still runs
-      # then, same as it does on push.
-      - run: python3 site/test_site_copy.py
+        with:
+          persist-credentials: false
 
       - name: Deploy site/public to Cloudflare Pages
         working-directory: site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx wrangler@4 pages deploy public --project-name biv-writ --branch main
+
+      # The app reads the update feed, so the live proof is that the domain
+      # serves the committed appcast.json byte for byte, and the page answers.
+      - name: Live check
+        run: |
+          set -euo pipefail
+          base=https://writ.braininavat.dance
+          for attempt in 1 2 3 4 5 6; do
+            if curl -sf "$base/appcast.json?deploy=$GITHUB_SHA" -o "$RUNNER_TEMP/appcast.json" \
+              && cmp -s "$RUNNER_TEMP/appcast.json" site/public/appcast.json; then
+              break
+            fi
+            if [ "$attempt" = 6 ]; then
+              echo "::error::$base/appcast.json does not match the deployed site/public/appcast.json" >&2
+              exit 1
+            fi
+            sleep 10
+          done
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$base/")
+          echo "appcast.json matches the commit; GET / -> $code (expected 200)"
+          test "$code" = 200
