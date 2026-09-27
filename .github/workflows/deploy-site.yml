@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
     paths: ['site/**']
+  workflow_dispatch: {}
 
 jobs:
   deploy-site:
@@ -13,6 +14,8 @@ jobs:
 
       # Same check ci.yml runs for site/, kept here too since this workflow's
       # own push trigger (path-filtered to site/**) fires independently of ci's.
+      # workflow_dispatch skips the path filter by design, so this still runs
+      # then, same as it does on push.
       - run: python3 site/test_site_copy.py
 
       - name: Deploy site/public to Cloudflare Pages
