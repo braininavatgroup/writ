@@ -24,5 +24,5 @@ command = "swift test --scratch-path .build-test"
 icon = "test-tube"
 
 [prompts]
-create_pr = "Read AGENTS.md and use the global linear-workflow and biv-ship-and-verify skills to publish the short PR body, verify its Linear attachment, and complete the current review loop. Follow the global policy for handoff and merge eligibility."
+create_pr = "Read AGENTS.md and use the global linear and ship skills to publish the short PR body, verify its Linear attachment, and complete the current review loop. Follow the global policy for handoff and merge eligibility."
 code_review = "Review the exact workspace/PR head against the linked issue and AGENTS.md. Report consequential findings in Conductor Checks. Review is read-only: report the verdict to the owning agent, which owns delivery and Linear updates under the global contract."
