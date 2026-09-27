@@ -11,3 +11,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 site/test_site_copy.py && swift test
+
+  # Which deployables this push changed. The diff covers the whole pushed
+  # range, and an unknown base (new branch, force push) counts as everything.
+  changes:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      site: ${{ steps.diff.outputs.site }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            git diff --name-only "$BEFORE" "$GITHUB_SHA" > "$RUNNER_TEMP/changed"
+          else
+            git ls-files > "$RUNNER_TEMP/changed"
+          fi
+          changed() { if grep -Eq "$2" "$RUNNER_TEMP/changed"; then echo "$1=true"; else echo "$1=false"; fi >> "$GITHUB_OUTPUT"; }
+          changed site '^(site/|\.github/workflows/deploy-site\.yml$)'
+
+  # Deploys ship only after the check above passes, from the SHA it tested.
+  deploy-site:
+    needs: [ci, changes]
+    if: needs.changes.outputs.site == 'true'
+    uses: ./.github/workflows/deploy-site.yml
+    secrets: inherit
