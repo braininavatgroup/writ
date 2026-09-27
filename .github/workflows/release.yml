@@ -1,0 +1,90 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+
+# DRAFT / PROPOSAL — do not enable until the secrets below exist in this repo.
+# See the "Add the Cloudflare and Apple secrets writ's new deploy/release jobs
+# need" Linear issue for the full list and what each one is for.
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # release.sh reads the VERSION and CHANGELOG.md at HEAD,
+                          # and build.sh's BUILD number is the HEAD commit timestamp
+
+      # Standard GitHub Actions macOS codesigning pattern: import the Developer
+      # ID Application certificate into a temporary keychain scoped to this job,
+      # rather than touching whatever keychain the runner image ships with.
+      - name: Import signing certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PATH="$RUNNER_TEMP/writ-release.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
+          echo -n "$CERTIFICATE_P12" | base64 --decode -o "$CERTIFICATE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Put it ahead of login.keychain in the search list so codesign and
+          # notarytool both find what they need without extra flags.
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain
+          security default-keychain -s "$KEYCHAIN_PATH"
+          rm -f "$CERTIFICATE_PATH"
+
+      # release.sh reads a `--keychain-profile` name (default AC_PASSWORD) that
+      # `xcrun notarytool` resolves against the keychain, not a raw password —
+      # store one in the same temporary keychain so release.sh runs unmodified.
+      - name: Store notarytool credentials
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          xcrun notarytool store-credentials AC_PASSWORD \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --keychain "$KEYCHAIN_PATH"
+
+      - name: Build, notarise, staple and package
+        env:
+          # Identity string from docs/development-reference.md — public, not a
+          # secret. Team L65VUZN7VJ, matching the certificate imported above.
+          DEVELOPER_ID: "Developer ID Application: Bradley Berkman (L65VUZN7VJ)"
+        run: ./release.sh
+
+      - name: Deploy site/public to Cloudflare Pages
+        working-directory: site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx wrangler@4 pages deploy public --project-name biv-writ --branch main
+
+      - name: Attach artefacts to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(cat VERSION)"
+          gh release create "${{ github.ref_name }}" \
+            "dist/Writ-$VERSION.dmg" "dist/Writ-$VERSION.zip" \
+            --title "Writ ${{ github.ref_name }}" \
+            --generate-notes
+
+      - name: Clean up temporary keychain
+        if: always()
+        run: security delete-keychain "$KEYCHAIN_PATH" || true
