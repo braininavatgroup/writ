@@ -8,16 +8,16 @@ previous=${2:-}
 version=${tag#v}
 root=$(cd "$(dirname "$0")/.." && pwd)
 
-if gh release edit "$tag" --draft=false --latest \
+if gh release edit "$tag" --draft=false --prerelease=false --latest=true \
     && LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="$version" "$root/tools/live" site; then
   exit 0
 fi
 
 echo "release $tag failed its live promotion check; restoring the previous stable release" >&2
 rollback_ok=1
-gh release edit "$tag" --prerelease || rollback_ok=0
+gh release edit "$tag" --prerelease=true --latest=false || rollback_ok=0
 if [[ -n $previous ]]; then
-  gh release edit "$previous" --latest || rollback_ok=0
+  gh release edit "$previous" --latest=true || rollback_ok=0
 fi
 
 if [[ $rollback_ok == 1 ]]; then
