@@ -4,6 +4,8 @@ Writ is a macOS menu bar app that holds a standing priority order for audio inpu
 
 The check is `python3 site/test_site_copy.py && swift test`. `swift test` needs Xcode, because the Command Line Tools lack the SwiftUI macro plugin; without Xcode, the PR's `ci` run on macos-15 is the proof.
 
+Layers run system (CoreAudio and IOKit wrappers, no UI framework) -> logic (device order, hot keys, updates, install) -> ui (SwiftUI views and AppKit windows), each using only itself and the layers before it. The app is one SwiftPM target, so the compiler only stops `Writ` importing `WritTests`; `Tests/WritTests/LayerTests.swift` assigns every source file a layer and fails a wrong-way reference.
+
 Device memory is permanent by design, so anything you filter out of live enumeration must also be purged from saved state, or it never ages out.
 
 The site (`site/public`, writ.braininavat.dance) deploys from `ci`'s `deploy-site` job after the check passes on a push to main that changed `site/`; its live step runs `tools/live site`, and `gh workflow run deploy-site.yml` re-deploys main.
