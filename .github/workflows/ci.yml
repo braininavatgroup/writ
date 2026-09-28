@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: python3 site/test_site_copy.py && swift test
+      - run: python3 site/test_site_copy.py && python3 site/test_feature_map.py && swift test
 
   # Which deployables this push changed. The diff covers the whole pushed
   # range, and an unknown base (new branch, force push) counts as everything.
@@ -36,7 +36,7 @@ jobs:
             git ls-files > "$RUNNER_TEMP/changed"
           fi
           changed() { if grep -Eq "$2" "$RUNNER_TEMP/changed"; then echo "$1=true"; else echo "$1=false"; fi >> "$GITHUB_OUTPUT"; }
-          changed site '^(site/|tools/live$|\.github/workflows/deploy-site\.yml$)'
+          changed site '^(site/|features/|tools/(live|check_feature_map\.py)$|\.github/workflows/deploy-site\.yml$)'
 
   # Deploys ship only after the check above passes, from the SHA it tested.
   deploy-site:

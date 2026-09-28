@@ -12,6 +12,10 @@ trap 'rm -rf "$tmp"' EXIT
 failures=0
 passes=0
 
+feature_map() {
+  python3 "$root/tools/check_feature_map.py"
+}
+
 # fetch URL OUT -> prints "status content-type"
 fetch() {
   curl -sL --max-time 20 -A 'writ-live-check' -o "$2" -w '%{http_code} %{content_type}' "$1" || true
@@ -142,10 +146,12 @@ appcast() {
 
 surfaces=("$@")
 [[ ${#surfaces[@]} -eq 0 ]] && surfaces=(site)
+check "feature map" feature_map
 for s in "${surfaces[@]}"; do
   case $s in
+    map) ;;
     site) site ;;
-    *) echo "FAIL unknown surface $s (known: site)"; failures=$((failures + 1)) ;;
+    *) echo "FAIL unknown surface $s (known: map, site)"; failures=$((failures + 1)) ;;
   esac
 done
 echo "live: $passes passed, $failures failed"

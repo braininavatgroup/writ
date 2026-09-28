@@ -93,6 +93,7 @@ struct ShortcutSettingsView: View {
                     conflict = nil
                 }
                 .controlSize(.small)
+                .accessibilityIdentifier("writ.shortcuts.restore-defaults")
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 12)
@@ -137,6 +138,7 @@ private struct ShortcutRow: View {
                 }
                 .buttonStyle(.plain)
                 .help("Click to record a new shortcut")
+                .accessibilityIdentifier("writ.shortcuts.action.\(action.rawValue)")
             }
         }
         .padding(.horizontal, 18)

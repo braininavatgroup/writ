@@ -103,6 +103,7 @@ struct MenuView: View {
             Spacer()
 
             VividSwitch(isOn: $model.enforcing)
+                .accessibilityIdentifier("writ.enforcing")
                 .help(model.enforcing
                       ? "Pause — stop changing devices automatically"
                       : "Resume enforcing your priority order")
@@ -150,6 +151,7 @@ struct MenuView: View {
                     .help(model.isMuted(d) ? "Unmute" : "Mute")
                     .accessibilityLabel(d == .input ? "Mute microphone" : "Mute output")
                     .accessibilityValue(model.isMuted(d) ? "Muted" : "Unmuted")
+                    .accessibilityIdentifier("writ.mute.\(d.rawValue)")
                 }
             }
 
@@ -292,6 +294,7 @@ struct MenuView: View {
             Menu {
                 Toggle("Open at Login", isOn: Binding(get: { model.launchesAtLogin },
                                                      set: { model.setLaunchAtLogin($0) }))
+                    .accessibilityIdentifier("writ.settings.open-at-login")
                 Divider()
                 // Renamed from "Re-apply", which said nothing about what it does.
                 // It re-asserts your ranking after you've clicked a device by
@@ -299,19 +302,24 @@ struct MenuView: View {
                 Button("Restore Priority Order") {
                     model.refreshDevices(); model.enforceAll(reason: "manual")
                 }
+                .accessibilityIdentifier("writ.settings.restore-priority")
                 Button("Keyboard Shortcuts…") { ShortcutWindowController.shared.show() }
+                    .accessibilityIdentifier("writ.settings.shortcuts")
                 Divider()
                 // Only offered when a feed is configured, so a build made
                 // without one shows nothing rather than an action that always
                 // fails. See UpdateCheck.
                 if UpdateCheck.feedURL != nil {
                     Button("Check for Updates…") { UpdateCheck.shared.check() }
+                        .accessibilityIdentifier("writ.settings.check-updates")
                     Toggle("Check Automatically",
                            isOn: Binding(get: { UpdateCheck.shared.automaticChecks },
                                          set: { UpdateCheck.shared.automaticChecks = $0 }))
+                        .accessibilityIdentifier("writ.settings.automatic-updates")
                 }
                 if let support = Support.email {
                     Button("Contact Support…") { Support.compose(to: support) }
+                        .accessibilityIdentifier("writ.settings.support")
                 }
                 Button("Writ \(UpdateCheck.currentVersion) (\(UpdateCheck.currentBuild))") {}
                     .disabled(true)
@@ -324,6 +332,7 @@ struct MenuView: View {
             .menuIndicator(.hidden)
             .fixedSize()
             .accessibilityLabel("Writ settings")
+            .accessibilityIdentifier("writ.settings")
 
             Spacer()
 
@@ -334,6 +343,7 @@ struct MenuView: View {
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .keyboardShortcut("q")
+                .accessibilityIdentifier("writ.quit")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
@@ -422,6 +432,7 @@ struct DeviceRow: View {
             .accessibilityValue(accessibilityState)
             .accessibilityHint(selectable ? "Use this device now" : "")
             .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
+            .accessibilityIdentifier("writ.device.\(direction.rawValue).\(entry.uid)")
 
             // Exactly one chip, and it always states the CURRENT truth. The old
             // "Lid open" badge described the rule but read as a status claim,
@@ -461,6 +472,7 @@ struct DeviceRow: View {
             .fixedSize()
             .opacity(hovering ? 1 : 0.25)
             .accessibilityLabel("Options for \(entry.displayName)")
+            .accessibilityIdentifier("writ.device-options.\(direction.rawValue).\(entry.uid)")
         }
         .padding(.horizontal, 6)
         .frame(height: Self.height)   // fixed height makes the drag maths exact
@@ -726,6 +738,7 @@ struct DirectionPicker: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(direction == .input ? "Input" : "Output")
+                .accessibilityIdentifier("writ.direction.\(direction.rawValue)")
                 .accessibilityAddTraits(selection == direction ? [.isButton, .isSelected]
                                                                : .isButton)
             }
@@ -783,4 +796,3 @@ struct Chip: View {
         .fixedSize()
     }
 }
-
