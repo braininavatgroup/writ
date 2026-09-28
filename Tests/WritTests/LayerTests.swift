@@ -35,12 +35,14 @@ final class LayerTests: XCTestCase {
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         .appendingPathComponent("Sources/Writ")
 
+    /// Every Swift file SwiftPM compiles into the target, keyed by its path
+    /// under Sources/Writ, subfolders included.
     private func sources() throws -> [String: String] {
-        let names = try FileManager.default.contentsOfDirectory(atPath: Self.sourceDir.path)
-            .filter { $0.hasSuffix(".swift") }
+        let files = FileManager.default.enumerator(atPath: Self.sourceDir.path)?
+            .compactMap { $0 as? String }.filter { $0.hasSuffix(".swift") } ?? []
         var out: [String: String] = [:]
-        for name in names {
-            out[name] = try String(contentsOf: Self.sourceDir.appendingPathComponent(name), encoding: .utf8)
+        for path in files {
+            out[path] = try String(contentsOf: Self.sourceDir.appendingPathComponent(path), encoding: .utf8)
         }
         return out
     }
@@ -50,7 +52,7 @@ final class LayerTests: XCTestCase {
         XCTAssertFalse(files.isEmpty, "no sources found at \(Self.sourceDir.path)")
         let mapped = Set(Self.layers.keys)
         for file in files.subtracting(mapped).sorted() {
-            XCTFail("\(file) has no layer: add it to LayerTests.layers and the layer line in AGENTS.md")
+            XCTFail("\(file) has no layer: add its path under Sources/Writ to LayerTests.layers")
         }
         for file in mapped.subtracting(files).sorted() {
             XCTFail("LayerTests.layers names \(file), which no longer exists")
@@ -76,9 +78,7 @@ final class LayerTests: XCTestCase {
 
     func testSystemLayerImportsNoUIFramework() throws {
         for (file, src) in try sources() where Self.layers[file] == .system {
-            for line in src.split(separator: "\n") where line.hasPrefix("import ") {
-                let module = line.dropFirst("import ".count)
-                    .split(whereSeparator: { $0 == "." || $0 == " " }).first.map(String.init) ?? ""
+            for module in Self.imports(in: Self.stripped(src)) {
                 XCTAssertFalse(Self.uiFrameworks.contains(module),
                                "\(file) (system) imports \(module); the system layer has no UI")
             }
@@ -124,11 +124,11 @@ final class LayerTests: XCTestCase {
     }
 
     /// Names a file offers to the rest of the module: its top-level, non-private
-    /// types, plus the notification names it adds to `Notification.Name`.
+    /// types, functions and globals, plus the names it adds to `Notification.Name`.
     static func declarations(in src: String) -> Set<String> {
         var names = Set<String>()
         let typeDecl = try! NSRegularExpression(
-            pattern: #"^(?:@\w+\s+)*(?:(?:public|internal|final|open)\s+)*(?:class|struct|enum|protocol|actor|typealias)\s+(\w+)"#,
+            pattern: #"^(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|internal|final|open|nonisolated)\s+)*(?:class|struct|enum|protocol|actor|typealias|func|let|var)\s+(\w+)"#,
             options: .anchorsMatchLines)
         let whole = NSRange(src.startIndex..., in: src)
         for m in typeDecl.matches(in: src, range: whole) {
@@ -145,6 +145,15 @@ final class LayerTests: XCTestCase {
             }
         }
         return names
+    }
+
+    /// Module names, including `@preconcurrency import X` and `import class X.Y`.
+    static func imports(in src: String) -> Set<String> {
+        let decl = try! NSRegularExpression(
+            pattern: #"^\s*(?:@\w+\s+)*import\s+(?:(?:class|struct|enum|protocol|typealias|func|var|let)\s+)?(\w+)"#,
+            options: .anchorsMatchLines)
+        return Set(decl.matches(in: src, range: NSRange(src.startIndex..., in: src))
+            .map { String(src[Range($0.range(at: 1), in: src)!]) })
     }
 
     static func identifiers(in src: String) -> Set<String> {
@@ -173,12 +182,25 @@ final class LayerTests: XCTestCase {
         @MainActor
         final class Shown {
             struct Nested {}
+            func member() {}
         }
+        @available(macOS 13, *) struct Tagged {}
+        func helper() {}
         private struct Hidden {}
         extension Notification.Name {
             static let writSomething = Notification.Name("x")
         }
         """
-        XCTAssertEqual(Self.declarations(in: src), ["Shown", "writSomething"])
+        XCTAssertEqual(Self.declarations(in: src), ["Shown", "Tagged", "helper", "writSomething"])
+    }
+
+    func testImportsSeeAttributesAndKinds() {
+        let src = """
+        import Foundation
+        @preconcurrency import AppKit
+        import class SwiftUI.Text
+        import Carbon.HIToolbox
+        """
+        XCTAssertEqual(Self.imports(in: src), ["Foundation", "AppKit", "SwiftUI", "Carbon"])
     }
 }
