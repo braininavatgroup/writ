@@ -80,6 +80,63 @@ class SiteCopyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "cannot establish"):
                 published_build(feed_path, "000")
 
+    def test_release_script_allows_only_verified_first_release_bootstrap(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tools = root / "tools"
+            tools.mkdir()
+            shutil.copy(REPO_ROOT / "tools/verify_release_feed.py", tools)
+            shutil.copy(REPO_ROOT / "release.sh", root)
+            (root / "VERSION").write_text("1.0\n")
+            log = root / "calls.log"
+            build = root / "build.sh"
+            build.write_text(
+                "#!/usr/bin/env bash\n"
+                "echo build-reached >> \"$RELEASE_GATE_LOG\"\n"
+                "exit 23\n"
+            )
+            build.chmod(0o755)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            fake_git = bin_dir / "git"
+            fake_git.write_text(
+                "#!/usr/bin/env bash\n"
+                "if [[ $1 == log ]]; then echo 1000; fi\n"
+            )
+            fake_git.chmod(0o755)
+            fake_curl = bin_dir / "curl"
+            fake_curl.write_text(
+                "#!/usr/bin/env bash\n"
+                "out= url=\n"
+                "while (($#)); do\n"
+                "  if [[ $1 == -o ]]; then out=$2; shift 2; continue; fi\n"
+                "  url=$1; shift\n"
+                "done\n"
+                "case $url in\n"
+                "  *appcast.json) body= status=404;;\n"
+                "  */repos/braininavatgroup/writ) body='{\"full_name\":\"braininavatgroup/writ\"}' status=200;;\n"
+                "  */releases/latest) body='{\"message\":\"Not Found\"}' status=404;;\n"
+                "  *) exit 9;;\n"
+                "esac\n"
+                "printf '%s' \"$body\" > \"$out\"\n"
+                "printf '%s' \"$status\"\n"
+            )
+            fake_curl.chmod(0o755)
+            env = os.environ | {
+                "PATH": f"{bin_dir}:{os.environ['PATH']}",
+                "RELEASE_GATE_LOG": str(log),
+                "DEVELOPER_ID": "test identity",
+            }
+            result = subprocess.run(
+                ["bash", str(root / "release.sh")],
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 23, result.stderr)
+            self.assertIn("build-reached", log.read_text())
+
     def test_failed_latest_live_check_demotes_release_and_restores_previous_latest(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

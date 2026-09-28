@@ -62,7 +62,7 @@ jobs:
             echo "PREVIOUS_LATEST_TAG=$previous_tag" >> "$GITHUB_ENV"
           else
             stable_tags=$(gh api --paginate "repos/$GH_REPO/releases" \
-              --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name')
+              --jq 'if type == "array" then .[] | select(.draft == false and .prerelease == false) | .tag_name else error("expected release array") end')
             [[ -z "$stable_tags" ]] || { echo "latest-release lookup failed despite existing stable releases" >&2; exit 1; }
             echo "PREVIOUS_LATEST_TAG=" >> "$GITHUB_ENV"
           fi
