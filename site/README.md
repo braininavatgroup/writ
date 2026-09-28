@@ -4,7 +4,7 @@ The checked-in artifact for the public `biv-writ` Cloudflare Pages project:
 
 | Path | What |
 |---|---|
-| `/` | Launch landing page in its private-release state |
+| `/` | Public download page with the immutable DMG and Homebrew command |
 | `/privacy/` | Privacy policy |
 | `/eula/` | Licence terms: free under PolyForm Noncommercial 1.0.0 |
 | `/appcast.json` | Redirect to the latest immutable GitHub Release feed |
@@ -18,7 +18,7 @@ is not an update feed, and a download page nobody can reach sells nothing.
 workflow tests the exact tagged commit, uploads all three files to a new
 immutable GitHub Release, publishes it, then checks the live feed and DMG.
 `/appcast.json` redirects to the latest release feed, so routine Pages deploys
-cannot remove or roll back release artifacts.
+cannot remove or roll back release artifacts. Update the landing page download URL and the owner-maintained Homebrew tap after verifying each new release.
 
 ## Existing production boundary
 

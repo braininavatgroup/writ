@@ -138,3 +138,7 @@ h2 { margin: 0; font-size: clamp(31px, 3.3vw, 52px); line-height: .98; letter-sp
 }
 
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.download-button { padding: 12px 20px; border-radius: 8px; background: var(--ink); color: var(--paper); text-decoration: none; font-weight: 600; }
+.availability p.install-command { margin-top: 24px; }
+.install-command code { display: block; margin-top: 8px; font-size: 13px; overflow-wrap: anywhere; }

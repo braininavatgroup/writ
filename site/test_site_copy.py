@@ -23,6 +23,15 @@ def normalized(source: str) -> str:
 
 
 class SiteCopyTests(unittest.TestCase):
+    def test_public_download_targets_the_versioned_release(self) -> None:
+        landing = (ROOT / "public/index.html").read_text()
+        version = (REPO_ROOT / "VERSION").read_text().strip()
+        url = f"https://github.com/braininavatgroup/writ/releases/download/v{version}/Writ-{version}.dmg"
+        self.assertIn(f'href="{url}"', landing)
+        self.assertIn("brew install --cask braininavatgroup/tap/writ", landing)
+        for stale in ("Private release", "not publicly released", "Public distribution is not open", 'content="noindex"'):
+            self.assertNotIn(stale, landing)
+
     def test_update_feed_is_a_durable_release_redirect(self) -> None:
         redirect = (ROOT / "public/_redirects").read_text()
         self.assertIn(
