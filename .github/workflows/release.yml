@@ -1,0 +1,152 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Test exact tagged commit
+        run: python3 site/test_site_copy.py && swift test
+
+  release:
+    needs: ci
+    concurrency:
+      group: writ-release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Validate release tag and immutable destination
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="$(cat VERSION)"
+          [[ "$TAG" == "v$VERSION" ]] || { echo "tag $TAG does not match VERSION $VERSION" >&2; exit 1; }
+          [[ "$(git rev-parse "$TAG^{commit}")" == "$GITHUB_SHA" ]] || { echo "tag does not resolve to the tested event commit" >&2; exit 1; }
+          git fetch origin main
+          git merge-base --is-ancestor "$TAG" origin/main || { echo "tag is not on main" >&2; exit 1; }
+          echo "LIVE_EXPECTED_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          repo_name="$(gh api "repos/$GH_REPO" --jq .full_name)"
+          [[ "$repo_name" == "$GH_REPO" ]] || { echo "GitHub repository identity mismatch" >&2; exit 1; }
+          if release_result=$(gh api "repos/$GH_REPO/releases/tags/$TAG" 2>&1); then
+            echo "release $TAG already exists; immutable releases cannot be replaced" >&2
+            exit 1
+          elif [[ "$release_result" != *"HTTP 404"* ]]; then
+            echo "could not safely check existing release: $release_result" >&2
+            exit 1
+          fi
+          latest_lookup=$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name 2>&1) || true
+          if [[ "$latest_lookup" != *"HTTP 404"* ]]; then
+            [[ "$latest_lookup" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "could not establish previous stable release: $latest_lookup" >&2; exit 1; }
+            previous_tag="$latest_lookup"
+            echo "PREVIOUS_LATEST_TAG=$previous_tag" >> "$GITHUB_ENV"
+          else
+            stable_tags=$(gh api --paginate "repos/$GH_REPO/releases" \
+              --jq 'if type == "array" then .[] | select(.draft == false and .prerelease == false) | .tag_name else error("expected release array") end')
+            [[ -z "$stable_tags" ]] || { echo "latest-release lookup failed despite existing stable releases" >&2; exit 1; }
+            echo "PREVIOUS_LATEST_TAG=" >> "$GITHUB_ENV"
+          fi
+
+      # Import a Developer ID certificate into a job-scoped keychain.
+      - name: Import signing certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PATH="$RUNNER_TEMP/writ-release.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
+          echo -n "$CERTIFICATE_P12" | base64 --decode -o "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain
+          security default-keychain -s "$KEYCHAIN_PATH"
+          rm -f "$CERTIFICATE_PATH"
+
+      - name: Store notarytool credentials
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          xcrun notarytool store-credentials AC_PASSWORD \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" --keychain "$KEYCHAIN_PATH"
+
+      - name: Build, notarise, staple and package
+        env:
+          DEVELOPER_ID: "Developer ID Application: Bradley Berkman (L65VUZN7VJ)"
+        run: ./release.sh
+
+      - name: Verify staged release payload before publishing
+        run: |
+          VERSION="$(cat VERSION)"
+          python3 tools/verify_release_feed.py dist/appcast.json \
+            --artifact "dist/Writ-$VERSION.dmg" --expected-version "$VERSION"
+          python3 - "$VERSION" <<'PY'
+          import sys, zipfile
+          from pathlib import Path
+          version = sys.argv[1]
+          with zipfile.ZipFile(f"dist/Writ-{version}.zip") as archive:
+              license_path = "Writ.app/Contents/Resources/LICENSE"
+              license_text = archive.read(license_path).decode()
+              assert "Required Notice: Copyright Bradley Berkman (https://bradleyberkman.com)" in license_text
+          PY
+
+      - name: Create draft release with versioned assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(cat VERSION)"
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/Writ-$VERSION.dmg" "dist/Writ-$VERSION.zip" dist/appcast.json \
+            --title "Writ $GITHUB_REF_NAME" --generate-notes --draft
+
+      - name: Publish prerelease and verify exact versioned assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIVE_REQUIRE_RELEASE: "1"
+          LIVE_ATTEMPTS: "6"
+        run: |
+          export LIVE_EXPECTED_VERSION="${GITHUB_REF_NAME#v}"
+          export LIVE_EXPECTED_RELEASE_TAG="$GITHUB_REF_NAME"
+          export LIVE_APPCAST_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/appcast.json"
+          gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease
+          tools/live site
+
+      - name: Promote release and restore previous latest on live failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: tools/promote_release.sh "$GITHUB_REF_NAME" "${PREVIOUS_LATEST_TAG:-}"
+
+      - name: Clean up temporary keychain
+        if: always()
+        run: |
+          if [[ -n "${KEYCHAIN_PATH:-}" ]]; then security delete-keychain "$KEYCHAIN_PATH" || true; fi

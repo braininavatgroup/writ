@@ -57,21 +57,19 @@ Identity: `Developer ID Application: Bradley Berkman (L65VUZN7VJ)` — team
 DEVELOPER_ID="Developer ID Application: Bradley Berkman (L65VUZN7VJ)" ./release.sh
 ```
 
-That builds, notarises, staples, verifies against Gatekeeper, packages both a DMG
-and a zip, and regenerates `site/public/appcast.json`. Publish with:
-
-```sh
-CF=$(security find-generic-password -s 'cloudflare-api-token' -a 'biv' -w)
-CLOUDFLARE_API_TOKEN=$CF CLOUDFLARE_ACCOUNT_ID=YOUR_CLOUDFLARE_ACCOUNT_ID \
-  npx wrangler@4 pages deploy site/public --project-name biv-writ --branch main
-```
+That builds, notarises, staples, verifies against Gatekeeper, packages a DMG
+and ZIP, and writes `dist/appcast.json` with the DMG digest. The version tag
+workflow tests that exact commit, uploads all three files to a new immutable
+GitHub Release, publishes it, and checks the live Pages feed and downloaded
+DMG. Routine Pages deploys preserve the stable `/appcast.json` redirect.
 
 Live at `writ.braininavat.dance`. `build.sh` supplies that site's update feed by
 default. Set `WRIT_UPDATE_FEED` explicitly when building a fork, or set it to an
 empty value to disable update requests. The normal `release.sh` build path
 requires clean source and compares the latest commit timestamp with the live
-feed when it can read that feed. The packaged app uses that timestamp as its
-build number.
+feed. Before the first release it accepts an empty feed only when the GitHub
+API also confirms that no release exists; otherwise it fails closed. The
+packaged app uses that timestamp as its build number.
 
 The first notarisation on a new signing identity is held for in-depth analysis —
 ours took roughly 26 hours, and a 50 KB hello-world submitted alongside it took

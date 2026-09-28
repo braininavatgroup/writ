@@ -1,4 +1,4 @@
-# site — Writ landing, legal, downloads, and update feed
+# site — Writ landing, legal, and update-feed redirect
 
 The checked-in artifact for the public `biv-writ` Cloudflare Pages project:
 
@@ -7,27 +7,26 @@ The checked-in artifact for the public `biv-writ` Cloudflare Pages project:
 | `/` | Launch landing page in its private-release state |
 | `/privacy/` | Privacy policy |
 | `/eula/` | Licence terms: free under PolyForm Noncommercial 1.0.0 |
-| `/appcast.json` | The update feed the app reads |
-| `/Writ-<version>.dmg` | The release download |
+| `/appcast.json` | Redirect to the latest immutable GitHub Release feed |
 
 **Public, with no access control.** An update feed the app must authenticate to
 is not an update feed, and a download page nobody can reach sells nothing.
 
 ## Releasing
 
-`./release.sh` writes `site/public/appcast.json` and copies the DMG into
-`site/public/`. Merging that to main publishes it: `ci`'s `deploy-site` job
-calls `.github/workflows/deploy-site.yml` after the check passes on a push that
-changed `site/`, then checks that `writ.braininavat.dance/appcast.json` serves
-the committed file. Nobody deploys by hand; `gh workflow run deploy-site.yml`
-re-deploys main.
+`./release.sh` builds the signed app, DMG, ZIP, and `dist/appcast.json`. The tag
+workflow tests the exact tagged commit, uploads all three files to a new
+immutable GitHub Release, publishes it, then checks the live feed and DMG.
+`/appcast.json` redirects to the latest release feed, so routine Pages deploys
+cannot remove or roll back release artifacts.
 
 ## Existing production boundary
 
 The Pages project and `writ.braininavat.dance` custom domain already exist. The
-update feed and release DMG are live there; a source change under `site/public/`
-becomes live when it merges to main. Normal releases
-must not recreate the project, custom-domain binding, or DNS record.
+appcast redirect and site are live there; release artifacts live in versioned
+GitHub Releases. A source change under `site/public/` becomes live when it
+merges to main. Releases must not recreate the project, custom-domain binding,
+or DNS record.
 
 Production feed and support values are defaults in `build.sh`, so a release does
 not depend on shell history:
