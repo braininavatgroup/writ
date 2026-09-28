@@ -175,10 +175,10 @@ class SiteCopyTests(unittest.TestCase):
             self.assertEqual(
                 calls,
                 [
-                    "gh release edit v2.0 --draft=false --latest",
+                    "gh release edit v2.0 --draft=false --prerelease=false --latest=true",
                     "live 2.0",
-                    "gh release edit v2.0 --prerelease",
-                    "gh release edit v1.9 --latest",
+                    "gh release edit v2.0 --prerelease=true --latest=false",
+                    "gh release edit v1.9 --latest=true",
                     "live 1.9",
                 ],
             )
