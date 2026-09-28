@@ -10,4 +10,6 @@ The site (`site/public`, writ.braininavat.dance) deploys from `ci`'s `deploy-sit
 
 Live: `tools/live` checks production read-only (pages, links, assets, appcast.json) and exits non-zero on any failure; any live check you'd otherwise improvise belongs in it.
 
+Cloud agents working writ issues run from music-promo (`agent.yml` per issue, `cleanup-pass.yml` daily) with the org secrets `LINEAR_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`; this public repo's own secrets are Apple signing and `CLOUDFLARE_API_TOKEN`, so add a key here only with the workflow that reads it.
+
 Sandboxing is only for the Mac App Store build (`./build.sh --appstore`), never the default, and the app icon stays original artwork, never an SF Symbol; build and signing are in `docs/development-reference.md`.
