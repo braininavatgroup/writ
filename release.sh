@@ -24,9 +24,8 @@ if [ "${1:-}" != "--package-only" ]; then
 
     # Refuse to ship a release built from a dirty tree: CFBundleVersion is the
     # HEAD commit timestamp, so uncommitted work would ship under a build number
-    # that already belongs to something else. site/public is excluded because
-    # this script writes it.
-    DIRTY="$(git status --porcelain -- . ':(exclude)site/public')"
+    # that already belongs to something else.
+    DIRTY="$(git status --porcelain)"
     if [ -n "$DIRTY" ]; then
         echo "error: working tree is dirty — commit before releasing" >&2
         echo "$DIRTY" >&2
@@ -37,8 +36,33 @@ if [ "${1:-}" != "--package-only" ]; then
     # published: everyone on the higher build would be stranded, since the app
     # only offers an update when the feed's build EXCEEDS theirs. Nothing about
     # that failure is visible — those users simply stop receiving releases.
-    PUBLISHED="$(curl -fsS --max-time 10 "https://writ.braininavat.dance/appcast.json" 2>/dev/null \
-                 | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["build"])' 2>/dev/null || echo 0)"
+    FEED_TMP="$(mktemp)"
+    API_TMP="$(mktemp)"
+    REPO_TMP="$(mktemp)"
+    trap 'rm -f "$FEED_TMP" "$API_TMP" "$REPO_TMP"' EXIT
+    FEED_STATUS="$(curl -sSL --max-time 20 -o "$FEED_TMP" -w '%{http_code}' \
+      "https://writ.braininavat.dance/appcast.json")" \
+      || { echo "error: could not read published update feed" >&2; exit 1; }
+    RELEASE_STATUS=""
+    if [ "$FEED_STATUS" = 404 ]; then
+        REPO_STATUS="$(curl -sS --max-time 20 -o "$REPO_TMP" -w '%{http_code}' \
+          "https://api.github.com/repos/braininavatgroup/writ")" \
+          || { echo "error: could not verify the Writ GitHub repository" >&2; exit 1; }
+        RELEASE_STATUS="$(curl -sS --max-time 20 -o "$API_TMP" -w '%{http_code}' \
+          "https://api.github.com/repos/braininavatgroup/writ/releases/latest")" \
+          || { echo "error: could not verify whether a prior release exists" >&2; exit 1; }
+        python3 tools/verify_release_feed.py "$FEED_TMP" --verify-no-public-release \
+          --repository-response "$REPO_TMP" --repository-status "$REPO_STATUS" \
+          --latest-response "$API_TMP" --latest-release-status "$RELEASE_STATUS" >/dev/null \
+          || { echo "error: feed is missing but GitHub did not confirm a first release" >&2; exit 1; }
+        PUBLISHED=0
+    else
+        PUBLISHED="$(python3 tools/verify_release_feed.py "$FEED_TMP" \
+          --published-build-status "$FEED_STATUS")" \
+          || { echo "error: could not establish the currently published build" >&2; exit 1; }
+    fi
+    rm -f "$FEED_TMP" "$API_TMP" "$REPO_TMP"
+    trap - EXIT
     CANDIDATE="$(git log -1 --format=%ct)"
     if [ "$PUBLISHED" != "0" ] && [ "$CANDIDATE" -le "$PUBLISHED" ]; then
         echo "error: this build ($CANDIDATE) is not newer than the published one ($PUBLISHED)." >&2
@@ -87,16 +111,16 @@ if [ "${1:-}" != "--package-only" ]; then
     xcrun stapler staple "dist/Writ-$VERSION.dmg"
 fi
 
-# The update feed, generated rather than hand-edited — a feed whose build number
-# disagrees with the DMG beside it either offers an update that does not exist or
-# hides one that does, and nobody notices until users stop receiving releases.
+# The update feed is uploaded with immutable versioned GitHub Release assets.
+# Pages redirects its stable feed URL to the latest published release.
 echo "==> writing the update feed"
 BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist")"
 
-mkdir -p site/public
-cp "dist/Writ-$VERSION.dmg" site/public/
+mkdir -p dist
 python3 - "$VERSION" "$BUILD" <<'PY'
 import json, re, sys
+from pathlib import Path
+import hashlib
 
 version, build = sys.argv[1], int(sys.argv[2])
 
@@ -132,16 +156,18 @@ def clean(text):
 
 notes = "\n".join("• " + clean(b) for b in bullets[:6]) or f"Writ {version}"
 
+artifact = Path(f"dist/Writ-{version}.dmg")
 feed = {
     "version": version,
     "build": build,
-    "url": f"https://writ.braininavat.dance/Writ-{version}.dmg",
+    "url": f"https://github.com/braininavatgroup/writ/releases/download/v{version}/Writ-{version}.dmg",
+    "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
     "notes": notes,
 }
-with open("site/public/appcast.json", "w") as f:
+with open("dist/appcast.json", "w") as f:
     json.dump(feed, f, indent=2)
     f.write("\n")
-print(f"    site/public/appcast.json  ->  {version} build {build}, {len(bullets)} notes")
+print(f"    dist/appcast.json  ->  {version} build {build}, {len(bullets)} notes")
 PY
 
 echo
@@ -150,4 +176,4 @@ ls -lh "dist/Writ-$VERSION.dmg" "dist/Writ-$VERSION.zip" | awk '{print "    " $9
 echo "    sha256 (dmg): $(shasum -a 256 "dist/Writ-$VERSION.dmg" | cut -d' ' -f1)"
 echo "    sha256 (zip): $(shasum -a 256 "dist/Writ-$VERSION.zip" | cut -d' ' -f1)"
 echo
-echo "==> to publish:  cd site && wrangler pages deploy public --project-name biv-writ"
+echo "==> upload dist/Writ-$VERSION.dmg, dist/Writ-$VERSION.zip, and dist/appcast.json to immutable release v$VERSION"

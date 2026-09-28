@@ -68,7 +68,7 @@ asset() {
 
 site() {
   local base=https://writ.braininavat.dance pub=$root/site/public f path link
-  check "site appcast.json" same_bytes "$base/appcast.json" "$pub/appcast.json"
+  check "site appcast and release artifact" appcast "$base/appcast.json"
   check "site site.css" same_bytes "$base/site.css" "$pub/site.css"
   while read -r f; do
     path=/${f#"$pub"/}; path=${path%index.html}
@@ -77,16 +77,67 @@ site() {
 
   # Every link and asset on the live pages, including what Cloudflare injects.
   cat "$tmp"/live-* 2>/dev/null | grep -oE '(href|src)="[^"]*"' | sed -E 's/^[a-z]+="//; s/"$//; s/#.*//' \
-    | grep -vE '^(data:|mailto:|$)|^/cdn-cgi/l/email-protection' | sort -u \
+    | grep -vE '^(data:|mailto:|$)|^/cdn-cgi/l/email-protection|^https?://writ\.braininavat\.dance/appcast\.json$|^/appcast\.json$' | sort -u \
     | while read -r link; do [[ $link == /* ]] && link=$base$link; echo "$link"; done > "$tmp/links"
   while read -r link; do check "site link $link" asset "$link"; done < "$tmp/links"
 
-  # The app downloads the appcast's url. Known broken until WRT-1 publishes a
-  # real artifact; reported, not failed, so site deploys aren't blocked.
-  # When WRT-1 lands, make this a check.
-  link=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["url"])' "$pub/appcast.json")
-  if out=$(asset "$link"); then echo "PASS site appcast download $link - $out"
-  else echo "KNOWN site appcast download $link - $out (WRT-1)"; fi
+}
+
+# Follow the stable Pages redirect, validate the release feed, then download
+# and hash the actual DMG. Before the first release, a missing feed is allowed
+# for ordinary site deploys; release jobs set LIVE_REQUIRE_RELEASE=1.
+appcast() {
+  local url=${LIVE_APPCAST_URL:-$1} got code status artifact_url release_status latest_tag repo_status
+  got=$(fetch "$url" "$tmp/appcast.json")
+  code=${got%% *}
+  if [[ $code != 200 ]]; then
+    if [[ $code == 404 ]]; then
+      repo_status=$(curl -sS --max-time 20 -o "$tmp/github-repo.json" -w '%{http_code}' \
+        https://api.github.com/repos/braininavatgroup/writ) || {
+        echo "could not verify the Writ GitHub repository"; return 1;
+      }
+      release_status=$(curl -sS --max-time 20 -o "$tmp/github-release.json" -w '%{http_code}' \
+        https://api.github.com/repos/braininavatgroup/writ/releases/latest) || {
+        echo "could not verify whether a release exists"; return 1;
+      }
+      if [[ $release_status == 404 && ${LIVE_REQUIRE_RELEASE:-0} != 1 ]]; then
+        python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" --verify-no-public-release \
+          --repository-response "$tmp/github-repo.json" --repository-status "$repo_status" \
+          --latest-response "$tmp/github-release.json" --latest-release-status "$release_status" || return 1
+        echo "no GitHub release published yet; redirect is ready"
+        return 0
+      fi
+    fi
+    echo "feed request returned $got"; return 1
+  fi
+  if [[ -n ${LIVE_EXPECTED_RELEASE_TAG:-} ]]; then
+    latest_tag=$LIVE_EXPECTED_RELEASE_TAG
+  else
+    release_status=$(curl -sS --max-time 20 -o "$tmp/github-release.json" -w '%{http_code}' \
+      https://api.github.com/repos/braininavatgroup/writ/releases/latest) || {
+      echo "could not verify latest GitHub release"; return 1;
+    }
+    [[ $release_status == 200 ]] || { echo "latest GitHub release returned HTTP $release_status"; return 1; }
+    latest_tag=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag_name"])' "$tmp/github-release.json")
+  fi
+  if [[ -n ${LIVE_EXPECTED_VERSION:-} ]]; then
+    python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" \
+      --expected-version "$LIVE_EXPECTED_VERSION" --latest-release-tag "$latest_tag" || return 1
+  else
+    python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" \
+      --latest-release-tag "$latest_tag" || return 1
+  fi
+  artifact_url=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["url"])' "$tmp/appcast.json")
+  status=$(fetch "$artifact_url" "$tmp/release.dmg")
+  [[ $status == 200\ * ]] || { echo "artifact returned $status"; return 1; }
+  if [[ -n ${LIVE_EXPECTED_VERSION:-} ]]; then
+    python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" --artifact "$tmp/release.dmg" \
+      --expected-version "$LIVE_EXPECTED_VERSION" --latest-release-tag "$latest_tag" || return 1
+  else
+    python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" --artifact "$tmp/release.dmg" \
+      --latest-release-tag "$latest_tag" || return 1
+  fi
+  echo "feed and versioned DMG verified (${status%%;*})"
 }
 
 surfaces=("$@")

@@ -67,6 +67,7 @@ rm -rf "dist/$APP"
 mkdir -p "dist/$APP/Contents/MacOS" "dist/$APP/Contents/Resources"
 cp "$BIN" "dist/$APP/Contents/MacOS/Writ"
 [ -f Resources/AppIcon.icns ] && cp Resources/AppIcon.icns "dist/$APP/Contents/Resources/"
+cp LICENSE "dist/$APP/Contents/Resources/LICENSE"
 
 cat > "dist/$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

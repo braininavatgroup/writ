@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import re
+import sys
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import tempfile
 import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from verify_release_feed import no_public_release, published_build, validate
 
 
 ROOT = Path(__file__).resolve().parent
@@ -13,6 +23,118 @@ def normalized(source: str) -> str:
 
 
 class SiteCopyTests(unittest.TestCase):
+    def test_update_feed_is_a_durable_release_redirect(self) -> None:
+        redirect = (ROOT / "public/_redirects").read_text()
+        self.assertIn(
+            "/appcast.json https://github.com/braininavatgroup/writ/releases/latest/download/appcast.json 302",
+            redirect,
+        )
+        self.assertFalse((ROOT / "public/appcast.json").exists())
+
+    def test_release_feed_checks_versioned_url_and_artifact_digest(self) -> None:
+        artifact_bytes = bytearray(1024)
+        artifact_bytes[512:516] = b"koly"
+        artifact_bytes = bytes(artifact_bytes)
+        feed = {
+            "version": "1.0",
+            "build": 1790540276,
+            "url": "https://github.com/braininavatgroup/writ/releases/download/v1.0/Writ-1.0.dmg",
+            "sha256": hashlib.sha256(artifact_bytes).hexdigest(),
+            "notes": "Initial release",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            feed_path, artifact_path = root / "appcast.json", root / "Writ.dmg"
+            feed_path.write_text(json.dumps(feed))
+            artifact_path.write_bytes(artifact_bytes)
+            self.assertEqual(validate(feed_path, artifact_path)["version"], "1.0")
+            with self.assertRaisesRegex(ValueError, "latest release"):
+                validate(feed_path, latest_release_tag="v1.1")
+            changed_artifact = bytearray(1024)
+            changed_artifact[512:516] = b"koly"
+            changed_artifact[0] = 1
+            artifact_path.write_bytes(changed_artifact)
+            with self.assertRaisesRegex(ValueError, "SHA-256"):
+                validate(feed_path, artifact_path)
+            feed["url"] = "https://example.invalid/Writ.dmg"
+            feed_path.write_text(json.dumps(feed))
+            with self.assertRaisesRegex(ValueError, "immutable release DMG"):
+                validate(feed_path)
+
+    def test_first_release_bootstrap_requires_verified_github_404(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            feed_path = Path(directory) / "empty.json"
+            repo_path = Path(directory) / "repo.json"
+            latest_path = Path(directory) / "latest.json"
+            feed_path.write_text("")
+            repo_path.write_text(json.dumps({"full_name": "braininavatgroup/writ"}))
+            latest_path.write_text(json.dumps({"message": "Not Found"}))
+            self.assertTrue(no_public_release(repo_path, "200", latest_path, "404"))
+            repo_path.write_text(json.dumps({"full_name": "other/private-repo"}))
+            self.assertFalse(no_public_release(repo_path, "404", latest_path, "404"))
+            repo_path.write_text(json.dumps({"full_name": "braininavatgroup/writ"}))
+            latest_path.write_text(json.dumps({"message": "rate limit exceeded"}))
+            self.assertFalse(no_public_release(repo_path, "200", latest_path, "404"))
+            with self.assertRaisesRegex(ValueError, "cannot establish"):
+                published_build(feed_path, "404")
+            with self.assertRaisesRegex(ValueError, "cannot establish"):
+                published_build(feed_path, "000")
+
+    def test_failed_latest_live_check_demotes_release_and_restores_previous_latest(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tools = root / "tools"
+            bin_dir = root / "bin"
+            tools.mkdir()
+            bin_dir.mkdir()
+            shutil.copy(REPO_ROOT / "tools/promote_release.sh", tools / "promote_release.sh")
+            live = tools / "live"
+            live.write_text(
+                "#!/usr/bin/env bash\n"
+                "echo \"live ${LIVE_EXPECTED_VERSION:-none}\" >> \"$PROMOTION_LOG\"\n"
+                "if [[ ${FAIL_LIVE_ONCE:-0} == 1 && ! -e $PROMOTION_STATE ]]; then "
+                "touch \"$PROMOTION_STATE\"; exit 1; fi\n"
+            )
+            live.chmod(0o755)
+            gh = bin_dir / "gh"
+            gh.write_text("#!/usr/bin/env bash\necho \"gh $*\" >> \"$PROMOTION_LOG\"\n")
+            gh.chmod(0o755)
+            log = root / "calls.log"
+            env = os.environ | {
+                "PATH": f"{bin_dir}:{os.environ['PATH']}",
+                "PROMOTION_LOG": str(log),
+                "PROMOTION_STATE": str(root / "live-failed-once"),
+                "FAIL_LIVE_ONCE": "1",
+            }
+            result = subprocess.run(
+                ["bash", str(tools / "promote_release.sh"), "v2.0", "v1.9"],
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 1)
+            calls = log.read_text().splitlines()
+            self.assertEqual(
+                calls,
+                [
+                    "gh release edit v2.0 --draft=false --latest",
+                    "live 2.0",
+                    "gh release edit v2.0 --prerelease",
+                    "gh release edit v1.9 --latest",
+                    "live 1.9",
+                ],
+            )
+
+    def test_app_bundle_contains_license_with_required_notice(self) -> None:
+        license_text = (REPO_ROOT / "LICENSE").read_text()
+        self.assertIn(
+            "Required Notice: Copyright Bradley Berkman (https://bradleyberkman.com)",
+            license_text,
+        )
+        build = (REPO_ROOT / "build.sh").read_text()
+        self.assertIn('cp LICENSE "dist/$APP/Contents/Resources/LICENSE"', build)
+
     def test_landing_privacy_copy_matches_the_documented_network_boundary(self) -> None:
         landing = (ROOT / "public/index.html").read_text()
 
