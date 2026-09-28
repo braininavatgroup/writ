@@ -1,0 +1,24 @@
+{
+  "app": [
+    { "id": "enforcing", "source": "Sources/Writ/WritApp.swift", "marker": "writ.enforcing" },
+    { "id": "input-output-tabs", "source": "Sources/Writ/WritApp.swift", "marker": "writ.direction.\\(direction.rawValue)" },
+    { "id": "mute", "source": "Sources/Writ/WritApp.swift", "marker": "writ.mute.\\(d.rawValue)" },
+    { "id": "device-selection", "source": "Sources/Writ/WritApp.swift", "marker": "writ.device.\\(direction.rawValue).\\(entry.uid)" },
+    { "id": "device-options", "source": "Sources/Writ/WritApp.swift", "marker": "writ.device-options.\\(direction.rawValue).\\(entry.uid)" },
+    { "id": "settings", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings\"" },
+    { "id": "open-at-login", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.open-at-login" },
+    { "id": "restore-priority", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.restore-priority" },
+    { "id": "keyboard-shortcuts", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.shortcuts" },
+    { "id": "check-updates", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.check-updates" },
+    { "id": "automatic-updates", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.automatic-updates" },
+    { "id": "support", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.support" },
+    { "id": "quit", "source": "Sources/Writ/WritApp.swift", "marker": "writ.quit" },
+    { "id": "shortcut-actions", "source": "Sources/Writ/ShortcutSettings.swift", "marker": "writ.shortcuts.action.\\(action.rawValue)" },
+    { "id": "shortcut-defaults", "source": "Sources/Writ/ShortcutSettings.swift", "marker": "writ.shortcuts.restore-defaults" }
+  ],
+  "site": [
+    { "id": "home", "source": "site/public/index.html", "marker": "<h1 id=\"hero-title\">" },
+    { "id": "privacy", "source": "site/public/privacy/index.html", "marker": "<h1>Privacy" },
+    { "id": "licence", "source": "site/public/eula/index.html", "marker": "<h1>Licence terms</h1>" }
+  ]
+}
