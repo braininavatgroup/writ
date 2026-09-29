@@ -30,6 +30,10 @@ extension Notification.Name {
 @MainActor
 final class StatusItemController: NSObject {
 
+    static let panelStyle: NSWindow.StyleMask = [
+        .nonactivatingPanel, .fullSizeContentView, .borderless,
+    ]
+
     private var statusItem: NSStatusItem?
     private var panel: NSPanel?
     private var outsideMonitor: Any?
@@ -226,9 +230,10 @@ final class StatusItemController: NSObject {
         // its content automatically instead of being measured once by hand.
         let controller = NSHostingController(rootView: PanelRoot(model: PriorityModel.shared))
 
-        let panel = NSPanel(
-            contentViewController: controller)
-        panel.styleMask = [.nonactivatingPanel, .fullSizeContentView, .borderless]
+        // `.nonactivatingPanel` controls input behavior, not merely appearance.
+        // Establish it when AppKit creates the panel instead of changing the
+        // window's style and rebuilding its view hierarchy afterward.
+        let panel = Self.makePanelWindow(contentViewController: controller)
         panel.isFloatingPanel = true
         panel.level = .statusBar
         panel.hidesOnDeactivate = false
@@ -248,6 +253,21 @@ final class StatusItemController: NSObject {
             .sink { [weak self] _ in self?.anchorToStatusItem() }
             .store(in: &cancellables)
 
+        return panel
+    }
+
+    /// Construct the WindowServer peer with its input behavior already set.
+    ///
+    /// Keep this sequence explicit: changing `styleMask` later can rebuild the
+    /// window's view hierarchy and does not preserve the construction-time
+    /// semantics of a non-activating panel.
+    static func makePanelWindow(contentViewController: NSViewController) -> NSPanel {
+        let panel = NSPanel(
+            contentRect: .zero,
+            styleMask: panelStyle,
+            backing: .buffered,
+            defer: false)
+        panel.contentViewController = contentViewController
         return panel
     }
 
