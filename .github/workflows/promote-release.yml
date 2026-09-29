@@ -1,0 +1,76 @@
+name: promote-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Immutable prerelease tag to promote (for example, v1.1)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: writ-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate the published site and staged release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "invalid release tag $RELEASE_TAG" >&2; exit 1; }
+          version="${RELEASE_TAG#v}"
+          [[ "$(cat site/PUBLISHED_VERSION)" == "$version" ]] || { echo "site/PUBLISHED_VERSION is not $version" >&2; exit 1; }
+          [[ "$(cat VERSION)" == "$version" ]] || { echo "VERSION is not $version" >&2; exit 1; }
+          git merge-base --is-ancestor "$RELEASE_TAG" HEAD || { echo "$RELEASE_TAG is not on main" >&2; exit 1; }
+          python3 site/test_site_copy.py
+
+          release_state=$(gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" \
+            --jq '[.tag_name, .draft, .prerelease, .immutable] | @tsv')
+          [[ "$release_state" == "$RELEASE_TAG"$'\t'false$'\t'true$'\t'true ]] || {
+            echo "$RELEASE_TAG is not an immutable published prerelease: $release_state" >&2
+            exit 1
+          }
+
+          latest_lookup=$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name 2>&1) || true
+          if [[ "$latest_lookup" == *"HTTP 404"* ]]; then
+            stable_tags=$(gh api --paginate "repos/$GH_REPO/releases" \
+              --jq 'if type == "array" then .[] | select(.draft == false and .prerelease == false) | .tag_name else error("expected release array") end')
+            [[ -z "$stable_tags" ]] || { echo "latest-release lookup failed despite existing stable releases" >&2; exit 1; }
+            previous_tag=
+          else
+            [[ "$latest_lookup" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "could not establish previous stable release: $latest_lookup" >&2; exit 1; }
+            [[ "$latest_lookup" != "$RELEASE_TAG" ]] || { echo "$RELEASE_TAG is already stable" >&2; exit 1; }
+            previous_tag="$latest_lookup"
+          fi
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+          echo "PREVIOUS_LATEST_TAG=$previous_tag" >> "$GITHUB_ENV"
+
+      - name: Verify the site deploy before changing latest
+        env:
+          LIVE_ATTEMPTS: "6"
+        run: |
+          if [[ -n ${PREVIOUS_LATEST_TAG:-} ]]; then
+            LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="${PREVIOUS_LATEST_TAG#v}" tools/live site
+          else
+            LIVE_REQUIRE_RELEASE=0 LIVE_EXPECTED_VERSION= tools/live site
+          fi
+
+      - name: Promote release and restore previous latest on live failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: tools/promote_release.sh "$RELEASE_TAG" "${PREVIOUS_LATEST_TAG:-}"

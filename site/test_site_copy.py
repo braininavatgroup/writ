@@ -197,6 +197,15 @@ class SiteCopyTests(unittest.TestCase):
                 ],
             )
 
+    def test_release_is_staged_before_the_site_promotes_it(self) -> None:
+        release = (REPO_ROOT / ".github/workflows/release.yml").read_text()
+        promotion = (REPO_ROOT / ".github/workflows/promote-release.yml").read_text()
+
+        self.assertIn('gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease', release)
+        self.assertNotIn("tools/promote_release.sh", release)
+        self.assertIn('cat site/PUBLISHED_VERSION', promotion)
+        self.assertIn('tools/promote_release.sh "$RELEASE_TAG"', promotion)
+
     def test_app_bundle_contains_license_with_required_notice(self) -> None:
         license_text = (REPO_ROOT / "LICENSE").read_text()
         self.assertIn(
