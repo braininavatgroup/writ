@@ -142,8 +142,6 @@ final class ErrorReporter: NSObject, MXMetricManagerSubscriber {
         return request
     }
 
-    func didReceive(_ payloads: [MXMetricPayload]) {}
-
     func didReceive(_ payloads: [MXDiagnosticPayload]) {
         let containsCrash = payloads.contains { !($0.crashDiagnostics?.isEmpty ?? true) }
         if containsCrash { report(.crash) }
