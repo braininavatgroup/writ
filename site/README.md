@@ -17,12 +17,13 @@ is not an update feed, and a download page nobody can reach sells nothing.
 `./release.sh` builds the signed app, DMG, ZIP, and `dist/appcast.json`. The tag
 workflow tests the exact tagged commit, uploads all three files to a new
 immutable GitHub prerelease, then checks its versioned feed and DMG. Update
-`PUBLISHED_VERSION`, the landing page download copy and URL, and the
-owner-maintained Homebrew tap. After both updates are live, dispatch
-`promote-release.yml` with the tag; it verifies the deployed site before making
-the prerelease stable and restores the previous stable release if the final
-live check fails. `/appcast.json` redirects to the latest stable release feed,
-so routine Pages deploys cannot remove or roll back release artifacts.
+`PUBLISHED_VERSION` and the landing page download copy and URL. After that site
+update is live, dispatch `promote-release.yml` with the tag; it verifies the
+deployed site before making the prerelease stable and restores the previous
+stable release if the final live check fails. Then update the owner-maintained
+Homebrew tap, whose audit requires a stable GitHub release. `/appcast.json`
+redirects to the latest stable release feed, so routine Pages deploys cannot
+remove or roll back release artifacts.
 
 ## Existing production boundary
 
