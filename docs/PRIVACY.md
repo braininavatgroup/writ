@@ -1,10 +1,11 @@
 # Writ — Privacy Policy
 
-_Last updated: 17 September 2026_
+_Last updated: 28 September 2026_
 
-Writ does not create an account or collect analytics, crash reports, or app
-telemetry. This page exists because an app that asks for microphone access owes
-you a specific answer rather than a reassuring one.
+Writ does not create an account or collect analytics. Optional crash and
+failed-device-switch reporting is off by default. This page exists because an
+app that asks for microphone access owes you a specific answer rather than a
+reassuring one.
 
 ## Microphone
 
@@ -28,14 +29,17 @@ On your Mac only, in standard macOS preferences
 - Device names, unique identifiers and any custom labels or icons you set
 - Per-device rules (never use / only when the lid is open)
 - Whether enforcement is on, and whether Writ opens at login
+- Whether optional error reporting is on, and the last attempt time for each
+  error kind so a repeated failure cannot create a reporting loop
 
 Deleting the app and that file removes everything Writ has ever kept.
 
 ## Network
 
-Writ makes no network connections in the course of managing your audio.
+Writ never sends audio, device identities, your priority order, labels, settings
+or user content.
 
-Two features make them:
+Three features make network connections:
 
 - **Update checks** — Writ asks a small version file whether a newer release
   exists, once a day, and whenever you choose Check for Updates. As with any web
@@ -55,13 +59,26 @@ Two features make them:
   Writ version, macOS version, Mac model and audio device names. It is a draft.
   You see all of it, you can edit or delete any of it, and nothing is sent until
   you send it.
+- **Optional error reports** — off by default. If you switch on **Send Crash &
+  Error Reports** in the gear menu, Writ reports a crash or a failed attempt to
+  switch audio devices. Each report contains exactly the error kind, Writ
+  version and macOS version. It contains no persistent identifier, device name or identifier,
+  audio setting, priority order, user content or stack trace. For crashes, macOS
+  provides Writ a MetricKit diagnostic; Writ uses only the fact that a crash
+  diagnostic exists and discards the diagnostic itself. The request goes
+  directly to Brain in a Vat's rate-limited error intake. As with any web
+  request, the server can see your IP address and standard headers. The three
+  report values are kept in an operational issue so the fault can be fixed.
+  Switching the option off stops Writ subscribing to new crash diagnostics and
+  sending error reports.
 
 ## Third parties
 
 Writ contains no third-party code, SDKs, frameworks or trackers. Writ does not
-send analytics or telemetry about how you use the app. Update checks expose
-only the ordinary request metadata described above, and Contact Support sends
-only what you review and choose to send.
+send analytics or usage telemetry. Update checks expose only the ordinary
+request metadata described above, Contact Support sends only what you review
+and choose to send, and optional error reports contain only the three values
+listed above.
 
 ## Your rights
 

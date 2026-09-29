@@ -9,6 +9,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var statusItem = StatusItemController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // A verification preview must not subscribe to or emit reports from
+        // the user's real preferences domain.
+        if !CommandLine.arguments.contains("--preview") { ErrorReporter.shared.start() }
         // Same family as --preview and --shortcuts: the update flow is reachable
         // only through the gear menu, and it is the one path that MUST be
         // exercised end to end before a release rather than reasoned about.
@@ -35,6 +38,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         statusItem.install()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        ErrorReporter.shared.stop()
     }
 }
 
@@ -316,6 +323,13 @@ struct MenuView: View {
                            isOn: Binding(get: { UpdateCheck.shared.automaticChecks },
                                          set: { UpdateCheck.shared.automaticChecks = $0 }))
                         .accessibilityIdentifier("writ.settings.automatic-updates")
+                }
+                if ErrorReporter.shared.isEnabled || ErrorReporter.shared.isConfigured {
+                    Toggle("Send Crash & Error Reports",
+                           isOn: Binding(get: { ErrorReporter.shared.isEnabled },
+                                         set: { ErrorReporter.shared.setEnabled($0) }))
+                        .accessibilityIdentifier("writ.settings.crash-reports")
+                        .help("Off by default. Sends crash and failed device-switch reports with only the error kind, Writ version, and macOS version.")
                 }
                 if let support = Support.email {
                     Button("Contact Support…") { Support.compose(to: support) }

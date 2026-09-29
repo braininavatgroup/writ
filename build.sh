@@ -38,9 +38,10 @@ BUILD="$(git log -1 --format=%ct 2>/dev/null || echo 1)"
 # not phone home. Now that the site exists, empty is the WRONG default: a release
 # cut without them ships with no updater and no support address, and nothing
 # about the resulting build looks wrong. Reproducibility beats caution here —
-# override either to "" for a build that makes no network requests at all.
+# override all three to "" for a build that makes no network requests at all.
 UPDATE_FEED="${WRIT_UPDATE_FEED-https://writ.braininavat.dance/appcast.json}"
 SUPPORT_EMAIL="${WRIT_SUPPORT_EMAIL-support@braininavat.systems}"
+ERROR_REPORT_URL="${WRIT_ERROR_REPORT_URL-https://biv-errors.bradley-d45.workers.dev/app/writ}"
 
 # Universal by default: Setapp requires a fat binary, and Intel Macs still run
 # macOS 13. There is no runtime cost — Apple silicon executes the arm64 slice
@@ -88,6 +89,7 @@ cat > "dist/$APP/Contents/Info.plist" <<PLIST
     <key>NSHumanReadableCopyright</key>  <string>Copyright © 2026 Bradley Berkman. All rights reserved.</string>
     <key>WritUpdateFeedURL</key>         <string>${UPDATE_FEED}</string>
     <key>WritSupportEmail</key>          <string>${SUPPORT_EMAIL}</string>
+    <key>WritErrorReportURL</key>        <string>${ERROR_REPORT_URL}</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Writ shows a live input level so you can confirm your microphone is being heard. Audio is measured and discarded — never recorded, saved or sent anywhere.</string>
 </dict>

@@ -17,7 +17,7 @@ tools/live site
 Build an isolated, non-networking preview and start the process you own:
 
 ```bash
-WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= ./build.sh --fast
+WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= WRIT_ERROR_REPORT_URL= ./build.sh --fast
 mkdir -p .context/verification
 ./dist/Writ.app/Contents/MacOS/Writ --preview >.context/verification/writ-preview.log 2>&1 &
 preview_pid=$!

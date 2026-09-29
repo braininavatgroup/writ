@@ -29,16 +29,16 @@ than the live feed.
 
 **Release only from `main`.**
 
-Two Info.plist keys gate features. They now **default to the production values**
+Three Info.plist keys gate features. They now **default to the production values**
 in `build.sh`, so `./release.sh` on its own produces a correct release. They were
 empty by default while nothing was deployed; once the site existed that became
 the wrong default, because a release cut without them ships with no updater and
-no support address and looks completely normal.
+no support address or error-report destination and looks completely normal.
 
 Override to empty for a build that makes no network requests at all:
 
 ```sh
-WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= ./build.sh --release
+WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= WRIT_ERROR_REPORT_URL= ./build.sh --release
 ```
 
 `--preview` renders the panel in an ordinary window and deliberately installs no

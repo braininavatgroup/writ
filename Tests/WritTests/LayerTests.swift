@@ -20,6 +20,7 @@ final class LayerTests: XCTestCase {
         "Hotkeys.swift": .logic,
         "Installer.swift": .logic,
         "UpdateCheck.swift": .logic,
+        "ErrorReporter.swift": .logic,
 
         "FirstRun.swift": .ui,
         "GlyphPicker.swift": .ui,
