@@ -12,15 +12,15 @@ run_mode = "nonconcurrent"
 # Pre-archive cleanup (Conductor's native hook): drop stale worktree refs.
 archive = "git worktree prune 2>/dev/null || true"
 
-[scripts.run.preview]
+[scripts.run.layout-preview]
 available_in = [ "local" ]
 command = "WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= ./build.sh --fast && ./dist/Writ.app/Contents/MacOS/Writ --preview"
-default = true
 icon = "play"
 
 [scripts.run.test]
 available_in = [ "local" ]
-command = "swift test --scratch-path .build-test"
+command = "python3 site/test_site_copy.py && python3 site/test_feature_map.py && swift test --scratch-path .build-test"
+default = true
 icon = "test-tube"
 
 [prompts]
