@@ -86,7 +86,9 @@ jobs:
       - name: Promote or verify the release
         env:
           GH_TOKEN: ${{ github.token }}
-          LIVE_ATTEMPTS: "6"
+          # GitHub's /releases/latest/download route can trail the latest-release
+          # API after promotion. Keep rollback armed while that CDN route catches up.
+          LIVE_ATTEMPTS: "36"
         run: |
           if [[ ${ALREADY_STABLE:-0} == 1 ]]; then
             LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="${RELEASE_TAG#v}" tools/live site
