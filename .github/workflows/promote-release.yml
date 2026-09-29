@@ -41,37 +41,55 @@ jobs:
 
           release_state=$(gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" \
             --jq '[.tag_name, .draft, .prerelease, .immutable] | @tsv')
-          [[ "$release_state" == "$RELEASE_TAG"$'\t'false$'\t'true$'\t'true ]] || {
-            echo "$RELEASE_TAG is not an immutable published prerelease: $release_state" >&2
+          IFS=$'\t' read -r release_tag release_draft release_prerelease release_immutable <<< "$release_state"
+          [[ "$release_tag" == "$RELEASE_TAG" && "$release_draft" == false && "$release_immutable" == true ]] || {
+            echo "$RELEASE_TAG is not an immutable published release: $release_state" >&2
             exit 1
           }
 
           latest_lookup=$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name 2>&1) || true
-          if [[ "$latest_lookup" == *"HTTP 404"* ]]; then
+          if [[ "$release_prerelease" == false ]]; then
+            [[ "$latest_lookup" == "$RELEASE_TAG" ]] || { echo "$RELEASE_TAG is stable but not latest" >&2; exit 1; }
+            already_stable=1
+            previous_tag=
+          elif [[ "$release_prerelease" != true ]]; then
+            echo "could not establish prerelease state: $release_state" >&2
+            exit 1
+          elif [[ "$latest_lookup" == *"HTTP 404"* ]]; then
             stable_tags=$(gh api --paginate "repos/$GH_REPO/releases" \
               --jq 'if type == "array" then .[] | select(.draft == false and .prerelease == false) | .tag_name else error("expected release array") end')
             [[ -z "$stable_tags" ]] || { echo "latest-release lookup failed despite existing stable releases" >&2; exit 1; }
+            already_stable=0
             previous_tag=
           else
             [[ "$latest_lookup" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "could not establish previous stable release: $latest_lookup" >&2; exit 1; }
             [[ "$latest_lookup" != "$RELEASE_TAG" ]] || { echo "$RELEASE_TAG is already stable" >&2; exit 1; }
+            already_stable=0
             previous_tag="$latest_lookup"
           fi
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
           echo "PREVIOUS_LATEST_TAG=$previous_tag" >> "$GITHUB_ENV"
+          echo "ALREADY_STABLE=$already_stable" >> "$GITHUB_ENV"
 
-      - name: Verify the site deploy before changing latest
+      - name: Verify the current live release state
         env:
           LIVE_ATTEMPTS: "6"
         run: |
-          if [[ -n ${PREVIOUS_LATEST_TAG:-} ]]; then
+          if [[ ${ALREADY_STABLE:-0} == 1 ]]; then
+            LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="${RELEASE_TAG#v}" tools/live site
+          elif [[ -n ${PREVIOUS_LATEST_TAG:-} ]]; then
             LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="${PREVIOUS_LATEST_TAG#v}" tools/live site
           else
             LIVE_REQUIRE_RELEASE=0 LIVE_EXPECTED_VERSION= tools/live site
           fi
 
-      - name: Promote release and restore previous latest on live failure
+      - name: Promote or verify the release
         env:
           GH_TOKEN: ${{ github.token }}
           LIVE_ATTEMPTS: "6"
-        run: tools/promote_release.sh "$RELEASE_TAG" "${PREVIOUS_LATEST_TAG:-}"
+        run: |
+          if [[ ${ALREADY_STABLE:-0} == 1 ]]; then
+            LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="${RELEASE_TAG#v}" tools/live site
+          else
+            tools/promote_release.sh "$RELEASE_TAG" "${PREVIOUS_LATEST_TAG:-}"
+          fi

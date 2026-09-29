@@ -189,9 +189,11 @@ class SiteCopyTests(unittest.TestCase):
             self.assertEqual(
                 calls,
                 [
-                    "gh release edit v2.0 --draft=false --prerelease=false --latest=true",
+                    "gh release edit v2.0 --draft=false --prerelease=false",
+                    "gh release edit v2.0 --latest=true",
                     "live 2.0",
-                    "gh release edit v2.0 --prerelease=true --latest=false",
+                    "gh release edit v2.0 --latest=false",
+                    "gh release edit v2.0 --prerelease=true",
                     "gh release edit v1.9 --latest=true",
                     "live 1.9",
                 ],
@@ -206,6 +208,7 @@ class SiteCopyTests(unittest.TestCase):
         self.assertIn('cat site/PUBLISHED_VERSION', promotion)
         self.assertIn('tools/promote_release.sh "$RELEASE_TAG"', promotion)
         self.assertIn('LIVE_ATTEMPTS: "6"', promotion)
+        self.assertIn('ALREADY_STABLE=$already_stable', promotion)
 
     def test_app_bundle_contains_license_with_required_notice(self) -> None:
         license_text = (REPO_ROOT / "LICENSE").read_text()
