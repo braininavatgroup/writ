@@ -13,9 +13,9 @@
   <main class="legal-main">
     <p class="eyebrow">Legal</p>
     <h1>Privacy Policy</h1>
-    <p class="legal-kicker">Last updated: 17 September 2026</p>
+    <p class="legal-kicker">Last updated: 28 September 2026</p>
 
-    <p>Writ does not create an account or collect analytics, crash reports, or app telemetry. This page exists because an app that asks for microphone access owes you a specific answer rather than a reassuring one.</p>
+    <p>Writ does not create an account or collect analytics. Optional crash and failed-device-switch reporting is off by default. This page exists because an app that asks for microphone access owes you a specific answer rather than a reassuring one.</p>
 
     <h2>Microphone</h2>
     <p>Writ requests microphone access for one purpose: to draw the input level meter, so you can see that your microphone is being heard before you start speaking.</p>
@@ -29,19 +29,21 @@
       <li>Device names, unique identifiers and any custom labels or icons you set</li>
       <li>Per-device rules (never use / only when the lid is open)</li>
       <li>Whether enforcement is on, and whether Writ opens at login</li>
+      <li>Whether optional error reporting is on, and the last attempt time for each error kind so a repeated failure cannot create a reporting loop</li>
     </ul>
     <p>Deleting the app and that file removes everything Writ has ever kept.</p>
 
     <h2>Network</h2>
-    <p>Writ makes no network connections in the course of managing your audio.</p>
-    <p>Two features make them:</p>
+    <p>Writ never sends audio, device identities, your priority order, labels, settings or user content.</p>
+    <p>Three features make network connections:</p>
     <ul>
       <li><strong>Update checks.</strong> Writ asks a small version file whether a newer release exists, once a day, and whenever you choose Check for Updates. As with any web request the server can see your IP address, the standard headers your system sends, and the fact that Writ checked for an update; no persistent identifier for you or your Mac, device details, audio settings, or in-app activity are included, and no record is kept. Switch it off with <strong>Check Automatically</strong> in the gear menu, and Writ will only ask when you do. Builds distributed without an update feed configured cannot make the request at all. If you choose to install an update, Writ downloads it and verifies that it was signed by us before replacing anything. A download that fails that check is deleted rather than installed.</li>
       <li><strong>Contact Support.</strong> This opens a draft in your mail app, pre-filled with your Writ version, macOS version, Mac model and audio device names. It is a draft. You see all of it, you can edit or delete any of it, and nothing is sent until you send it.</li>
+      <li><strong>Optional error reports.</strong> This is off by default. If you switch on <strong>Send Crash &amp; Error Reports</strong> in the gear menu, Writ reports a crash or a failed attempt to switch audio devices. Each report contains exactly the error kind, Writ version and macOS version. It contains no persistent identifier, device name or identifier, audio setting, priority order, user content or stack trace. For crashes, macOS provides Writ a MetricKit diagnostic; Writ uses only the fact that a crash diagnostic exists and discards the diagnostic itself. The request goes directly to Brain in a Vat's rate-limited error intake. As with any web request, the server can see your IP address and standard headers. The three report values are kept in an operational issue so the fault can be fixed. Switching the option off stops Writ subscribing to new crash diagnostics and sending error reports.</li>
     </ul>
 
     <h2>Third parties</h2>
-    <p>Writ contains no third-party code, SDKs, frameworks or trackers. Writ does not send analytics or telemetry about how you use the app. Update checks expose only the ordinary request metadata described above, and Contact Support sends only what you review and choose to send.</p>
+    <p>Writ contains no third-party code, SDKs, frameworks or trackers. Writ does not send analytics or usage telemetry. Update checks expose only the ordinary request metadata described above, Contact Support sends only what you review and choose to send, and optional error reports contain only the three values listed above.</p>
 
     <h2>Your rights</h2>
     <p>Because Writ does not retain personal data, there is nothing held about you to access, correct, export or delete. Data stored locally is yours and under your control at all times.</p>

@@ -293,6 +293,7 @@ final class PriorityModel: ObservableObject {
             s.lastAction = "\(from) → \(winner.name) (\(reason))"
         } else {
             s.lastAction = "failed to select \(winner.name)"
+            ErrorReporter.shared.report(.deviceSwitchFailed)
         }
         state[d] = s
     }
@@ -368,7 +369,9 @@ final class PriorityModel: ObservableObject {
         guard let s = state[d],
               let device = s.connected.first(where: { $0.uid == entry.uid }) else { return }
         guard entry.isEligible(lidClosed: lidClosed) else { return }
-        Audio.setCurrent(device, d)
+        if !Audio.setCurrent(device, d) {
+            ErrorReporter.shared.report(.deviceSwitchFailed)
+        }
         refreshDevices()
     }
 

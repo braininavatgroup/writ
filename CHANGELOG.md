@@ -3,7 +3,16 @@
 Notable changes to Writ. Versions follow the `VERSION` file; the build number is
 the commit count and is what the updater compares.
 
-## 1.0 — unreleased
+## 1.1 — 28 September 2026
+
+### Added
+
+- Optional crash and failed-device-switch reporting. It is off by default and
+  sends only the error kind, Writ version and macOS version through Brain in a
+  Vat's rate-limited error intake. No stack trace, device identity, settings or
+  user content is included (WRT-14).
+
+## 1.0 — 27 September 2026
 
 First release.
 

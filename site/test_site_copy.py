@@ -25,9 +25,14 @@ def normalized(source: str) -> str:
 class SiteCopyTests(unittest.TestCase):
     def test_public_download_targets_the_versioned_release(self) -> None:
         landing = (ROOT / "public/index.html").read_text()
-        version = (REPO_ROOT / "VERSION").read_text().strip()
+        version = (ROOT / "PUBLISHED_VERSION").read_text().strip()
+        app_version = (REPO_ROOT / "VERSION").read_text().strip()
+        self.assertRegex(version, r"^\d+\.\d+(?:\.\d+)?$")
+        self.assertLessEqual(tuple(map(int, version.split("."))), tuple(map(int, app_version.split("."))))
         url = f"https://github.com/braininavatgroup/writ/releases/download/v{version}/Writ-{version}.dmg"
         self.assertIn(f'href="{url}"', landing)
+        self.assertIn(f"Writ {version} for macOS", landing)
+        self.assertIn(f"Download Writ {version}.", landing)
         self.assertIn("brew install --cask braininavatgroup/tap/writ", landing)
         for stale in ("Private release", "not publicly released", "Public distribution is not open", 'content="noindex"'):
             self.assertNotIn(stale, landing)
@@ -200,6 +205,8 @@ class SiteCopyTests(unittest.TestCase):
         )
         build = (REPO_ROOT / "build.sh").read_text()
         self.assertIn('cp LICENSE "dist/$APP/Contents/Resources/LICENSE"', build)
+        self.assertIn("WritErrorReportURL", build)
+        self.assertIn("https://biv-errors.bradley-d45.workers.dev/app/writ", build)
 
     def test_landing_privacy_copy_matches_the_documented_network_boundary(self) -> None:
         landing = (ROOT / "public/index.html").read_text()
@@ -208,8 +215,9 @@ class SiteCopyTests(unittest.TestCase):
         self.assertIn("Your audio stays on your Mac", landing)
         self.assertIn("No analytics", landing)
         self.assertIn("no audio is recorded or transmitted", landing)
-        self.assertIn("Automatic update checks make a standard web request", landing)
-        self.assertIn("exposes your IP address and standard headers", landing)
+        self.assertIn("Optional crash and failed-device-switch reports are off by default", landing)
+        self.assertIn("only the error kind, Writ version, and macOS version", landing)
+        self.assertIn("Network requests expose your IP address and standard headers", landing)
 
     def test_privacy_policies_do_not_overstate_the_network_boundary(self) -> None:
         policies = {
@@ -225,16 +233,20 @@ class SiteCopyTests(unittest.TestCase):
                 self.assertNotIn("Since no personal data is collected or transmitted", policy)
                 self.assertNotIn("Nothing about your devices, settings or usage is transmitted", policy)
                 self.assertIn(
-                    "Writ does not create an account or collect analytics, crash reports, or app telemetry.",
+                    "Writ does not create an account or collect analytics.",
                     policy,
                 )
+                self.assertIn("Optional crash and failed-device-switch reporting is off by default.", policy)
+                self.assertIn("Each report contains exactly the error kind, Writ version and macOS version.", policy)
+                self.assertIn("no persistent identifier, device name or identifier", policy)
+                self.assertIn("user content or stack trace", policy)
                 self.assertIn(
                     "server can see your IP address, the standard headers",
                     policy,
                 )
                 self.assertIn("the fact that Writ checked for an update", policy)
                 self.assertIn(
-                    "Writ does not send analytics or telemetry about how you use the app.",
+                    "Writ does not send analytics or usage telemetry.",
                     policy,
                 )
                 self.assertIn("Because Writ does not retain personal data", policy)
@@ -250,10 +262,11 @@ class SiteCopyTests(unittest.TestCase):
                 eula = normalized(source)
                 self.assertNotIn("Writ collects no personal data", eula)
                 self.assertIn(
-                    "Writ does not retain personal data or collect analytics, crash reports, or app telemetry.",
+                    "Writ does not retain personal data or collect analytics.",
                     eula,
                 )
-                self.assertIn("Update checks expose ordinary request metadata", eula)
+                self.assertIn("Optional crash and failed-device-switch reporting is off by default", eula)
+                self.assertIn("only the error kind, Writ version and macOS version", eula)
 
     def test_terms_match_the_free_polyform_noncommercial_license(self) -> None:
         terms = {

@@ -18,7 +18,9 @@ is not an update feed, and a download page nobody can reach sells nothing.
 workflow tests the exact tagged commit, uploads all three files to a new
 immutable GitHub Release, publishes it, then checks the live feed and DMG.
 `/appcast.json` redirects to the latest release feed, so routine Pages deploys
-cannot remove or roll back release artifacts. Update the landing page download URL and the owner-maintained Homebrew tap after verifying each new release.
+cannot remove or roll back release artifacts. After verifying each new release,
+update `PUBLISHED_VERSION`, the landing page download copy and URL, and the
+owner-maintained Homebrew tap.
 
 ## Existing production boundary
 
@@ -28,12 +30,13 @@ GitHub Releases. A source change under `site/public/` becomes live when it
 merges to main. Releases must not recreate the project, custom-domain binding,
 or DNS record.
 
-Production feed and support values are defaults in `build.sh`, so a release does
-not depend on shell history:
+Production feed, support and error-report values are defaults in `build.sh`, so
+a release does not depend on shell history:
 
 ```sh
 DEVELOPER_ID="Developer ID Application: Bradley Berkman (L65VUZN7VJ)" ./release.sh
 ```
 
-For a deliberate build that makes no update or support network request, override
-both defaults to empty as documented in the repository `AGENTS.md`.
+For a deliberate build that makes no update, error-report or support network
+request, override all three defaults to empty as documented in the repository
+`AGENTS.md`.

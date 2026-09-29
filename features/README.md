@@ -9,7 +9,7 @@
 | Mute and level | Current-device card | `writ.mute.<direction>` and the labelled Input level meter. |
 | Device choice and order | A device row, its grip, or Options | Dynamic `writ.device.<direction>.<uid>` and `writ.device-options…`; click selects, drag reorders, Move to Top is the accessible equivalent. |
 | Device rules and label | The row’s Options menu | Never/allow, lid rule, Icon & Label, Move to Top and Forget Device live behind the mapped options control. |
-| Settings | Gear | `writ.settings` opens the mapped login, restore, shortcut, update, support and version items. |
+| Settings | Gear | `writ.settings` opens the mapped login, restore, shortcut, update, opt-in crash-reporting, support and version items. |
 | Keyboard shortcuts | Settings → Keyboard Shortcuts | Each action is `writ.shortcuts.action.<action>`; Restore Defaults is separately mapped. |
 | Quit | Panel footer | `writ.quit`. |
 | Website | `writ.braininavat.dance` | Home, Privacy and Licence pages are mapped; `tools/live site` also checks their links/assets, appcast and versioned DMG. |

@@ -15,7 +15,7 @@ Open the downloaded disk image, copy Writ to Applications, and launch it. Writ l
 
 Open Input and Output and drag the device grips into your preferred order. Writ starts enforcing that order while it is running. Display audio starts with "never use", and the built-in microphone starts with "only when the lid is open". Review those defaults for your setup. The [user guide](docs/GUIDE.md) explains pausing enforcement, choosing a device temporarily, and AirPlay behavior.
 
-Microphone permission is for the live input meter. Audio is measured and discarded, not recorded or uploaded. The app checks its update feed; automatic checks can be disabled in the gear menu. See the [privacy policy](docs/PRIVACY.md) for local storage and network behavior.
+Microphone permission is for the live input meter. Audio is measured and discarded, not recorded or uploaded. The app checks its update feed; automatic checks can be disabled in the gear menu. Optional crash and failed-device-switch reporting is separately off by default. See the [privacy policy](docs/PRIVACY.md) for local storage and network behavior.
 
 ## What it does
 

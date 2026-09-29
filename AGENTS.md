@@ -14,4 +14,6 @@ Live: `tools/live` walks `features/features.json`, checks production read-only (
 
 Cloud agents working writ issues run from music-promo (`agent.yml` per issue, `cleanup-pass.yml` daily) with the org secrets `LINEAR_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`; this public repo's own secrets are Apple signing and `CLOUDFLARE_API_TOKEN`, so add a key here only with the workflow that reads it.
 
+Crash and failed-device-switch reporting is opt-in and posts only its fixed three-field schema to the public, rate-limited `/app/writ` route; a native binary never contains the shared intake secret. For a deliberately non-networking build, set `WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= WRIT_ERROR_REPORT_URL=`.
+
 Sandboxing is only for the Mac App Store build (`./build.sh --appstore`), never the default, and the app icon stays original artwork, never an SF Symbol; build and signing are in `docs/development-reference.md`.

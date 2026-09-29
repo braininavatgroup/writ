@@ -11,6 +11,7 @@
     { "id": "keyboard-shortcuts", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.shortcuts" },
     { "id": "check-updates", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.check-updates" },
     { "id": "automatic-updates", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.automatic-updates" },
+    { "id": "crash-reports", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.crash-reports" },
     { "id": "support", "source": "Sources/Writ/WritApp.swift", "marker": "writ.settings.support" },
     { "id": "quit", "source": "Sources/Writ/WritApp.swift", "marker": "writ.quit" },
     { "id": "shortcut-actions", "source": "Sources/Writ/ShortcutSettings.swift", "marker": "writ.shortcuts.action.\\(action.rawValue)" },

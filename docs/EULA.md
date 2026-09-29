@@ -1,6 +1,6 @@
 # Writ — Licence terms
 
-_Last updated: 17 September 2026_
+_Last updated: 28 September 2026_
 
 Writ is free. The app and its source code are licensed by Bradley Berkman under
 the PolyForm Noncommercial License 1.0.0, published in full in the repository's
@@ -69,9 +69,10 @@ Section 5 applies only to the extent that law permits.
 
 ## 7. Privacy
 
-Writ does not retain personal data or collect analytics, crash reports, or app
-telemetry. Update checks expose ordinary request metadata as described in
-PRIVACY.md.
+Writ does not retain personal data or collect analytics. Optional crash and
+failed-device-switch reporting is off by default and, when enabled, sends only
+the error kind, Writ version and macOS version. Network behavior is described
+in PRIVACY.md.
 
 ## Contact
 
