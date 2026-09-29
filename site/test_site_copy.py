@@ -205,6 +205,7 @@ class SiteCopyTests(unittest.TestCase):
         self.assertNotIn("tools/promote_release.sh", release)
         self.assertIn('cat site/PUBLISHED_VERSION', promotion)
         self.assertIn('tools/promote_release.sh "$RELEASE_TAG"', promotion)
+        self.assertIn('LIVE_ATTEMPTS: "6"', promotion)
 
     def test_app_bundle_contains_license_with_required_notice(self) -> None:
         license_text = (REPO_ROOT / "LICENSE").read_text()

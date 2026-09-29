@@ -73,4 +73,5 @@ jobs:
       - name: Promote release and restore previous latest on live failure
         env:
           GH_TOKEN: ${{ github.token }}
+          LIVE_ATTEMPTS: "6"
         run: tools/promote_release.sh "$RELEASE_TAG" "${PREVIOUS_LATEST_TAG:-}"
