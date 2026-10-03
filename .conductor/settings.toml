@@ -17,6 +17,17 @@ available_in = [ "local" ]
 command = "WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= ./build.sh --fast && ./dist/Writ.app/Contents/MacOS/Writ --preview"
 icon = "play"
 
+# The site (site/public, writ.braininavat.dance); cloud workspaces have no
+# CONDUCTOR_PORT, so it falls back to 8000.
+[scripts.run.site]
+command = "python3 -m http.server ${CONDUCTOR_PORT:-8000} --bind 127.0.0.1 --directory site/public"
+icon = "globe"
+
+# The site, shared to Bradley's phone or iPad (skills: preview).
+[scripts.run.site-phone]
+command = "~/.agents/skills/preview/preview.sh run ${CONDUCTOR_PORT:-8000} -- python3 -m http.server ${CONDUCTOR_PORT:-8000} --bind 127.0.0.1 --directory site/public"
+icon = "smartphone"
+
 [scripts.run.test]
 available_in = [ "local" ]
 command = "python3 site/test_site_copy.py && python3 site/test_feature_map.py && swift test --scratch-path .build-test"
