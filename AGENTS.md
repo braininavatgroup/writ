@@ -12,7 +12,7 @@ The site (`site/public`, writ.braininavat.dance) deploys from `ci`'s `deploy-sit
 
 Live: `tools/live` walks `features/features.json`, checks production read-only (pages, links, assets, appcast.json) and exits non-zero on any failure; any live check you'd otherwise improvise belongs in it.
 
-Cloud agents working writ issues run from music-promo (`agent.yml` per issue, `cleanup-pass.yml` daily) with the org secrets `LINEAR_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`; this public repo's own secrets are Apple signing and `CLOUDFLARE_API_TOKEN`, so add a key here only with the workflow that reads it.
+Cloud agents working writ issues run from braininavatgroup/agent-runtime (`agent.yml`, dispatched for each Ready Linear issue; the daily cleanup pass in `routines/cleanup-pass.md` and `cleanup-pass.yml`) with the org secrets `LINEAR_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`; this public repo's own secrets are Apple signing and `CLOUDFLARE_API_TOKEN`, so add a key here only with the workflow that reads it.
 
 Crash and failed-device-switch reporting is opt-in and posts only its fixed three-field schema to the public, rate-limited `/app/writ` route; a native binary never contains the shared intake secret. For a deliberately non-networking build, set `WRIT_UPDATE_FEED= WRIT_SUPPORT_EMAIL= WRIT_ERROR_REPORT_URL=`.
 
