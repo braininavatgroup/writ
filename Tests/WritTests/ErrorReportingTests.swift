@@ -2,15 +2,8 @@ import XCTest
 @testable import Writ
 
 final class ErrorReportingTests: XCTestCase {
-    private func defaults() -> UserDefaults {
-        let name = "writ-error-reporting-tests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: name)!
-        defaults.removePersistentDomain(forName: name)
-        return defaults
-    }
-
     func testReportingIsOffByDefaultAndThrottlesEachKindWhenEnabled() {
-        let defaults = defaults()
+        let defaults = makeTestDefaults()
         var requests: [URLRequest] = []
         var instant = Date(timeIntervalSince1970: 1_000_000)
         let reporter = ErrorReporter(
@@ -39,7 +32,7 @@ final class ErrorReportingTests: XCTestCase {
     }
 
     func testEnabledReporterSendsOnlyWhileStarted() {
-        let defaults = defaults()
+        let defaults = makeTestDefaults()
         defaults.set(true, forKey: ErrorReporter.enabledKey)
         var requests: [URLRequest] = []
         let reporter = ErrorReporter(
