@@ -50,6 +50,15 @@ menu bar item, so the UI can be inspected without fighting a menu bar manager:
 
 ## Signing
 
+The release job reads its five Apple credentials from the `release-signing`
+GitHub environment, whose deployment policy permits only `v*` tags. Keep
+`APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_P12`, `APPLE_CERTIFICATE_PASSWORD`,
+`APPLE_ID`, `APPLE_TEAM_ID` and `APPLE_APP_SPECIFIC_PASSWORD` there, not as
+repository secrets. The release still verifies that the tag matches `VERSION`
+and belongs to main before importing the certificate. Environment placement
+is not proof that arbitrary tag creation is restricted; tag authority is a
+separate repository control.
+
 Identity: `Developer ID Application: Bradley Berkman (L65VUZN7VJ)` — team
 **L65VUZN7VJ**, not the `U69MKH47B4` on the older Apple Development certs.
 
