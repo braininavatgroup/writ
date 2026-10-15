@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Public-tree denylist
-        uses: braininavatgroup/agent-operating-policy/.github/actions/public-tree-check@ae63f1fd82c5a198cbbb51aee51491407505fd2a
+        uses: braininavatgroup/agent-operating-policy/.github/actions/public-tree-check@b8c552c8c595504eb3090042422b0e617c4c726b
         with:
           denylist: ${{ vars.PUBLIC_TREE_DENYLIST }}
       - run: python3 site/test_site_copy.py && python3 site/test_feature_map.py && swift test
