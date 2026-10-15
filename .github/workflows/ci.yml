@@ -10,6 +10,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Public-tree denylist
+        uses: braininavatgroup/agent-operating-policy/.github/actions/public-tree-check@b8c552c8c595504eb3090042422b0e617c4c726b
+        with:
+          denylist: ${{ vars.PUBLIC_TREE_DENYLIST }}
       - run: python3 site/test_site_copy.py && python3 site/test_feature_map.py && swift test
 
   # Which deployables this push changed. The diff covers the whole pushed
