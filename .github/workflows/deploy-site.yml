@@ -1,39 +1,13 @@
-name: deploy-site
-
-# site/public to the biv-writ Cloudflare Pages project (writ.braininavat.dance).
-# ci calls this after its check passes on a push to main that changed site/, so
-# the SHA that deploys is the SHA ci tested; ci is the only gate, so there is
-# no test step here. A dispatch re-deploys main by hand.
-
+name: signing-environment-negative-proof
 on:
-  workflow_call: {}
   workflow_dispatch: {}
-
 permissions:
   contents: read
-
 jobs:
-  deploy:
-    if: github.ref == 'refs/heads/main'
+  signing-environment-refuses-branch:
+    environment: release-signing
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    concurrency:
-      group: deploy-site
-      cancel-in-progress: false
+    timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Deploy site/public to Cloudflare Pages
-        working-directory: site
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: npx wrangler@4 pages deploy public --project-name biv-writ --branch main
-
-      # Production must serve the checked-in pages and appcast redirect, plus
-      # every link and asset those pages load.
-      - name: Live check
-        env:
-          LIVE_ATTEMPTS: 6
-        run: tools/live site
+      - name: Must never start from this branch
+        run: exit 1
