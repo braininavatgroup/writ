@@ -21,7 +21,7 @@ jobs:
       group: deploy-site
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
@@ -35,5 +35,5 @@ jobs:
       # every link and asset those pages load.
       - name: Live check
         env:
-          LIVE_ATTEMPTS: 6
+          LIVE_SETTLE_SECONDS: "50"
         run: tools/live site

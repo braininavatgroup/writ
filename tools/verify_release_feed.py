@@ -16,6 +16,8 @@ def validate(
     latest_release_tag: Optional[str] = None,
 ) -> dict:
     feed = json.loads(feed_path.read_text())
+    if not isinstance(feed, dict):
+        raise ValueError("feed must be a JSON object")
     version = feed.get("version")
     if not isinstance(version, str) or not re.fullmatch(r"\d+\.\d+(?:\.\d+)?", version):
         raise ValueError("version must be a dotted numeric release version")
@@ -57,7 +59,7 @@ def no_public_release(
         latest = json.loads(latest_path.read_text())
     except (OSError, json.JSONDecodeError):
         return False
-    return repository.get("full_name") == "braininavatgroup/writ" and latest.get("message") == "Not Found"
+    return isinstance(repository, dict) and isinstance(latest, dict) and repository.get("full_name") == "braininavatgroup/writ" and latest.get("message") == "Not Found"
 
 
 def published_build(feed_path: Path, feed_status: str) -> int:
@@ -97,7 +99,10 @@ def main() -> int:
             print("no public release exists")
             return 0
         feed = validate(args.feed, args.artifact, args.expected_version, args.latest_release_tag)
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
+    except OSError as exc:
+        print(f"release verification input unavailable: {exc}", file=sys.stderr)
+        return 3
+    except (ValueError, json.JSONDecodeError) as exc:
         print(f"invalid release feed: {exc}", file=sys.stderr)
         return 1
     print(f"Writ {feed['version']} build {feed['build']} feed valid")

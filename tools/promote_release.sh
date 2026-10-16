@@ -8,10 +8,19 @@ previous=${2:-}
 version=${tag#v}
 root=$(cd "$(dirname "$0")/.." && pwd)
 
-if gh release edit "$tag" --draft=false --prerelease=false \
-    && gh release edit "$tag" --latest=true \
-    && LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="$version" "$root/tools/live" site; then
+if ! gh release edit "$tag" --draft=false --prerelease=false \
+    || ! gh release edit "$tag" --latest=true; then
+  echo "release promotion could not be confirmed; no wrong live result. Existing incident intake owns state reconciliation; no automatic demotion." >&2
+  exit 3
+fi
+live_exit=0
+LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="$version" "$root/tools/live" site || live_exit=$?
+if [[ $live_exit == 0 ]]; then
   exit 0
+fi
+if [[ $live_exit != 1 ]]; then
+  echo "release observation unavailable; no automatic demotion. Existing incident intake owns release-state reconciliation." >&2
+  exit 3
 fi
 
 echo "release $tag failed its live promotion check; restoring the previous stable release" >&2

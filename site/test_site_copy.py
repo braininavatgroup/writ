@@ -207,8 +207,9 @@ class SiteCopyTests(unittest.TestCase):
         self.assertNotIn("tools/promote_release.sh", release)
         self.assertIn('cat site/PUBLISHED_VERSION', promotion)
         self.assertIn('tools/promote_release.sh "$RELEASE_TAG"', promotion)
-        self.assertIn('LIVE_ATTEMPTS: "6"', promotion)
-        self.assertIn('LIVE_ATTEMPTS: "36"', promotion)
+        self.assertIn('LIVE_SETTLE_SECONDS: "50"', promotion)
+        self.assertIn('LIVE_SETTLE_SECONDS: "350"', promotion)
+        self.assertNotIn('LIVE_ATTEMPTS:', promotion)
         self.assertIn('ALREADY_STABLE=$already_stable', promotion)
 
     def test_app_bundle_contains_license_with_required_notice(self) -> None:

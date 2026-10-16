@@ -123,7 +123,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           LIVE_REQUIRE_RELEASE: "1"
-          LIVE_ATTEMPTS: "6"
+          LIVE_SETTLE_SECONDS: "50"
         run: |
           export LIVE_EXPECTED_VERSION="${GITHUB_REF_NAME#v}"
           export LIVE_EXPECTED_RELEASE_TAG="$GITHUB_REF_NAME"
