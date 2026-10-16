@@ -1,34 +1,48 @@
 #!/usr/bin/env bash
 # Read-only check that production matches the committed deployables.
 #   tools/live [site]    one line per check, non-zero exit on any failure
-# LIVE_ATTEMPTS (default 1) retries each check 10s apart, so a deploy job can
-# wait out Cloudflare propagation. New live checks belong here, not inline.
+# Exit0 pass,1 wrong after one fresh retry,3 unavailable/input failure.
+# LIVE_SETTLE_SECONDS bounds the single propagation wait (default15,max350).
 set -uo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-attempts=${LIVE_ATTEMPTS:-1}
-tmp=$(mktemp -d)
+settle=${LIVE_SETTLE_SECONDS:-15}
+[[ $settle =~ ^(0|[1-9][0-9]{0,2})$ && $settle -le 350 ]] || { echo "DOWN invalid LIVE_SETTLE_SECONDS" >&2; exit 3; }
+delay_spent=0
+tmp=$(mktemp -d) || { echo "DOWN temporary observation directory unavailable" >&2; exit 3; }
 trap 'rm -rf "$tmp"' EXIT
 failures=0
+unavailable=0
 passes=0
 
 feature_map() {
-  python3 "$root/tools/check_feature_map.py"
+  python3 "$root/tools/check_feature_map.py" || return 3
 }
 
 # fetch URL OUT -> prints "status content-type"
 fetch() {
-  curl -sL --max-time 20 -A 'writ-live-check' -o "$2" -w '%{http_code} %{content_type}' "$1" || true
+  local answer
+  answer=$(curl -sL --max-time 20 -A 'writ-live-check' -o "$2" -w '%{http_code} %{content_type}' "$1") || return 3
+  [[ $answer =~ ^[0-9][0-9][0-9]\  && $answer != 000\ * ]] || return 3
+  echo "$answer"
 }
 
 # check NAME FUNC ARGS... ; FUNC prints a detail line and returns 0 on pass
 check() {
-  local name=$1 out i; shift
-  for ((i = 1; i <= attempts; i++)); do
+  local name=$1 out i code; shift
+  for i in 1 2; do
     if out=$("$@" 2>&1); then
       echo "PASS $name${out:+ - $out}"; passes=$((passes + 1)); return
+    else
+      code=$?
     fi
-    ((i < attempts)) && sleep 10
+    if [[ $code != 1 ]]; then
+      echo "DOWN $name - $out"; unavailable=$((unavailable + 1)); return
+    fi
+    if [[ $i == 1 && $delay_spent == 0 ]]; then
+      delay_spent=1
+      sleep "$settle"
+    fi
   done
   echo "FAIL $name - $out"; failures=$((failures + 1))
 }
@@ -38,9 +52,15 @@ bust() { echo "$1?live=${GITHUB_SHA:-$$}"; }
 # A committed file served byte for byte (appcast.json, site.css).
 same_bytes() {
   local url=$1 file=$2 got
-  got=$(fetch "$(bust "$url")" "$tmp/body")
+  [[ -f $file ]] || { echo "local comparison file unavailable"; return 3; }
+  got=$(fetch "$(bust "$url")" "$tmp/body") || return 3
   [[ $got == 200\ * ]] || { echo "got $got"; return 1; }
-  cmp -s "$tmp/body" "$file" || { echo "200 but differs from ${file#"$root"/}"; return 1; }
+  if cmp -s "$tmp/body" "$file"; then :
+  else
+    local code=$?
+    [[ $code == 1 ]] || return 3
+    echo "200 but differs from ${file#"$root"/}"; return 1
+  fi
   echo "200, matches $(basename "$file")"
 }
 
@@ -48,13 +68,15 @@ same_bytes() {
 # not byte-compared because Cloudflare rewrites mailto links on the way out.
 page() {
   local url=$1 file=$2 got title h1
-  got=$(fetch "$(bust "$url")" "$tmp/page")
+  [[ -f $file ]] || { echo "local page input unavailable"; return 3; }
+  got=$(fetch "$(bust "$url")" "$tmp/page") || return 3
   [[ $got == 200\ text/html* ]] || { echo "got $got"; return 1; }
   title=$(grep -o '<title>[^<]*</title>' "$file" | head -1)
   h1=$(tr '\n' ' ' < "$file" | grep -o '<h1[^>]*>[^<]*' | head -1 | sed 's/<h1[^>]*>//')
+  [[ -n "$title" && -n "$h1" ]] || { echo "local page has no title/h1 input"; return 3; }
   grep -qF "$title" "$tmp/page" || { echo "missing $title"; return 1; }
   grep -qF "$h1" "$tmp/page" || { echo "missing h1 '$h1'"; return 1; }
-  cp "$tmp/page" "$tmp/live-$(echo "$url" | tr -c 'a-z0-9' _)"
+  cp "$tmp/page" "$tmp/live-$(echo "$url" | tr -c 'a-z0-9' _)" || return 3
   echo "200, $title"
 }
 
@@ -62,7 +84,7 @@ page() {
 # asset must not come back as HTML unless it is itself a page.
 asset() {
   local url=$1 got
-  got=$(fetch "$url" "$tmp/asset")
+  got=$(fetch "$url" "$tmp/asset") || return 3
   [[ $got == 200\ * ]] || { echo "got $got"; return 1; }
   if [[ $url == https://writ.braininavat.dance/* && $url != */ && $got == *text/html* ]]; then
     echo "200 but HTML (Pages fallback: file not deployed)"; return 1
@@ -92,22 +114,26 @@ site() {
 # for ordinary site deploys; release jobs set LIVE_REQUIRE_RELEASE=1.
 appcast() {
   local url=${LIVE_APPCAST_URL:-$1} got code status artifact_url release_status latest_tag repo_status
-  got=$(fetch "$url" "$tmp/appcast.json")
+  got=$(fetch "$url" "$tmp/appcast.json") || return 3
   code=${got%% *}
   if [[ $code != 200 ]]; then
+    if [[ $code == 404 && ${LIVE_REQUIRE_RELEASE:-0} == 1 ]]; then
+      echo "required release feed is missing"; return 1
+    fi
     if [[ $code == 404 ]]; then
       repo_status=$(curl -sS --max-time 20 -o "$tmp/github-repo.json" -w '%{http_code}' \
         https://api.github.com/repos/braininavatgroup/writ) || {
-        echo "could not verify the Writ GitHub repository"; return 1;
+        echo "could not verify the Writ GitHub repository"; return 3;
       }
       release_status=$(curl -sS --max-time 20 -o "$tmp/github-release.json" -w '%{http_code}' \
         https://api.github.com/repos/braininavatgroup/writ/releases/latest) || {
-        echo "could not verify whether a release exists"; return 1;
+        echo "could not verify whether a release exists"; return 3;
       }
+      [[ $repo_status == 200 && ( $release_status == 200 || $release_status == 404 ) ]] || { echo "release metadata unavailable"; return 3; }
       if [[ $release_status == 404 && ${LIVE_REQUIRE_RELEASE:-0} != 1 ]]; then
         python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" --verify-no-public-release \
           --repository-response "$tmp/github-repo.json" --repository-status "$repo_status" \
-          --latest-response "$tmp/github-release.json" --latest-release-status "$release_status" || return 1
+          --latest-response "$tmp/github-release.json" --latest-release-status "$release_status" || return 3
         echo "no GitHub release published yet; redirect is ready"
         return 0
       fi
@@ -119,40 +145,48 @@ appcast() {
   else
     release_status=$(curl -sS --max-time 20 -o "$tmp/github-release.json" -w '%{http_code}' \
       https://api.github.com/repos/braininavatgroup/writ/releases/latest) || {
-      echo "could not verify latest GitHub release"; return 1;
+      echo "could not verify latest GitHub release"; return 3;
     }
-    [[ $release_status == 200 ]] || { echo "latest GitHub release returned HTTP $release_status"; return 1; }
-    latest_tag=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag_name"])' "$tmp/github-release.json")
+    [[ $release_status == 200 ]] || { echo "latest GitHub release returned HTTP $release_status"; return 3; }
+    latest_tag=$(python3 -c 'import json,re,sys; tag=json.load(open(sys.argv[1])).get("tag_name"); assert isinstance(tag,str) and re.fullmatch(r"v[0-9]+\.[0-9]+(?:\.[0-9]+)?",tag); print(tag)' "$tmp/github-release.json") || return 3
   fi
   if [[ -n ${LIVE_EXPECTED_VERSION:-} ]]; then
     python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" \
-      --expected-version "$LIVE_EXPECTED_VERSION" --latest-release-tag "$latest_tag" || return 1
+      --expected-version "$LIVE_EXPECTED_VERSION" --latest-release-tag "$latest_tag" || return $?
   else
     python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" \
-      --latest-release-tag "$latest_tag" || return 1
+      --latest-release-tag "$latest_tag" || return $?
   fi
-  artifact_url=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["url"])' "$tmp/appcast.json")
-  status=$(fetch "$artifact_url" "$tmp/release.dmg")
+  artifact_url=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["url"])' "$tmp/appcast.json") || return 3
+  status=$(fetch "$artifact_url" "$tmp/release.dmg") || return 3
   [[ $status == 200\ * ]] || { echo "artifact returned $status"; return 1; }
   if [[ -n ${LIVE_EXPECTED_VERSION:-} ]]; then
     python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" --artifact "$tmp/release.dmg" \
-      --expected-version "$LIVE_EXPECTED_VERSION" --latest-release-tag "$latest_tag" || return 1
+      --expected-version "$LIVE_EXPECTED_VERSION" --latest-release-tag "$latest_tag" || return $?
   else
     python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" --artifact "$tmp/release.dmg" \
-      --latest-release-tag "$latest_tag" || return 1
+      --latest-release-tag "$latest_tag" || return $?
   fi
   echo "feed and versioned DMG verified (${status%%;*})"
 }
 
 surfaces=("$@")
 [[ ${#surfaces[@]} -eq 0 ]] && surfaces=(site)
-check "feature map" feature_map
+if map_result=$(feature_map 2>&1); then
+  echo "PASS feature map - $map_result"
+else
+  echo "DOWN feature map - $map_result"; exit 3
+fi
+[[ ${LIVE_REQUIRE_RELEASE:-0} =~ ^[01]$ ]] || { echo "DOWN invalid LIVE_REQUIRE_RELEASE"; exit 3; }
+[[ -z ${LIVE_EXPECTED_VERSION:-} || $LIVE_EXPECTED_VERSION =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "DOWN invalid expected version input"; exit 3; }
+[[ -z ${LIVE_EXPECTED_RELEASE_TAG:-} || $LIVE_EXPECTED_RELEASE_TAG =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "DOWN invalid expected tag input"; exit 3; }
 for s in "${surfaces[@]}"; do
   case $s in
     map) ;;
     site) site ;;
-    *) echo "FAIL unknown surface $s (known: map, site)"; failures=$((failures + 1)) ;;
+    *) echo "DOWN unknown surface $s (known: map, site)"; unavailable=$((unavailable + 1)) ;;
   esac
 done
-echo "live: $passes passed, $failures failed"
-((failures == 0))
+echo "live: $passes passed, $failures failed, $unavailable unavailable"
+[[ $failures == 0 ]] || exit 1
+[[ $unavailable == 0 ]] || exit 3

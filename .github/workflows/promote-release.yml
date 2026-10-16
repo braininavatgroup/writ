@@ -19,7 +19,7 @@ jobs:
       group: writ-release
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: main
           fetch-depth: 0
@@ -73,7 +73,7 @@ jobs:
 
       - name: Verify the current live release state
         env:
-          LIVE_ATTEMPTS: "6"
+          LIVE_SETTLE_SECONDS: "50"
         run: |
           if [[ ${ALREADY_STABLE:-0} == 1 ]]; then
             LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="${RELEASE_TAG#v}" tools/live site
@@ -87,8 +87,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           # GitHub's /releases/latest/download route can trail the latest-release
-          # API after promotion. Keep rollback armed while that CDN route catches up.
-          LIVE_ATTEMPTS: "36"
+          # API after promotion. Preserve its350s settling bound before the one retry.
+          LIVE_SETTLE_SECONDS: "350"
         run: |
           if [[ ${ALREADY_STABLE:-0} == 1 ]]; then
             LIVE_REQUIRE_RELEASE=1 LIVE_EXPECTED_VERSION="${RELEASE_TAG#v}" tools/live site
