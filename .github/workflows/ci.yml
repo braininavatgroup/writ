@@ -9,7 +9,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Public-tree denylist
         uses: braininavatgroup/agent-operating-policy/.github/actions/public-tree-check@b8c552c8c595504eb3090042422b0e617c4c726b
         with:
@@ -25,7 +25,7 @@ jobs:
     outputs:
       site: ${{ steps.diff.outputs.site }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
           persist-credentials: false
