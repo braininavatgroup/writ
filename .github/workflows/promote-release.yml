@@ -87,7 +87,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           # GitHub's /releases/latest/download route can trail the latest-release
-          # API after promotion. Preserve its350s settling bound before the one retry.
+          # API after promotion. Preserve its 350s settling bound before the one retry.
           LIVE_SETTLE_SECONDS: "350"
         run: |
           if [[ ${ALREADY_STABLE:-0} == 1 ]]; then
