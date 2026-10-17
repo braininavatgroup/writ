@@ -150,3 +150,19 @@ Each of these looked like a defect first and cost real time:
   it and says so, but only after a delay: the status item window has an EMPTY
   frame for the first moment of its life, and an empty frame is not evidence of
   hiding.
+
+## Signing credential verification
+
+`verify-signing.yml` is a manual, non-publishing check in the existing
+`release-signing` environment. It checks the Developer ID certificate's identity,
+expiry and matching private key, then authenticates a read of Apple's notarization
+history. It does not import into a Keychain, sign an app, submit a binary, or create
+a release. Output contains verdicts only, not credentials or submission history.
+
+Run it on a tag pointing to reviewed `main` that contains this workflow. For a
+credential migration, a temporary `v-signing-check-<commit>` tag permits the
+environment check without triggering `release.yml`, whose push filter accepts
+only `v` followed by a digit. Dispatch `verify-signing.yml` on that exact tag;
+record the run and commit, then delete only that temporary tag after verification.
+Do not delete old secret copies until the check succeeds. A failure is not a reason
+to weaken the environment policy or publish a test release.
