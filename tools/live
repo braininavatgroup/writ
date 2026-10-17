@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Read-only check that production matches the committed deployables.
 #   tools/live [site]    one line per check, non-zero exit on any failure
-# Exit0 pass,1 wrong after one fresh retry,3 unavailable/input failure.
-# LIVE_SETTLE_SECONDS bounds the single propagation wait (default15,max350).
+# Exit 0 pass, 1 wrong after one fresh retry, 3 unavailable or input failure.
+# LIVE_SETTLE_SECONDS bounds the single propagation wait (default 15, max 350).
 set -uo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -130,7 +130,7 @@ appcast() {
         echo "could not verify whether a release exists"; return 3;
       }
       [[ $repo_status == 200 && ( $release_status == 200 || $release_status == 404 ) ]] || { echo "release metadata unavailable"; return 3; }
-      if [[ $release_status == 404 && ${LIVE_REQUIRE_RELEASE:-0} != 1 ]]; then
+      if [[ $release_status == 404 ]]; then
         python3 "$root/tools/verify_release_feed.py" "$tmp/appcast.json" --verify-no-public-release \
           --repository-response "$tmp/github-repo.json" --repository-status "$repo_status" \
           --latest-response "$tmp/github-release.json" --latest-release-status "$release_status" || return 3
