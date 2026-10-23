@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Read-only check that production matches the committed deployables.
 #   tools/live [site]    one line per check, non-zero exit on any failure
-# Exit0 pass,1 wrong after one fresh retry,3 unavailable/input failure.
-# LIVE_SETTLE_SECONDS bounds the single propagation wait (default15,max350).
+# Exit 0 pass, 1 wrong after one fresh retry, 3 unavailable or input failure.
+# LIVE_SETTLE_SECONDS bounds the single propagation wait (default 15, max 350).
 set -uo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
