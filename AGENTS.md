@@ -2,7 +2,7 @@
 
 Writ is a macOS menu bar app that holds a standing priority order for audio input and output devices: Swift, SwiftUI and AppKit, no third-party dependencies, bundle ID `dance.braininavat.writ`.
 
-The check is `python3 site/test_site_copy.py && python3 site/test_feature_map.py && swift test`. `swift test` needs Xcode, because the Command Line Tools lack the SwiftUI macro plugin; without Xcode, the PR's `ci` run on macos-15 is the proof.
+The check is `python3 site/test_site_copy.py && python3 site/test_feature_map.py && python3 tools/test_verify_signing.py && swift test`. `swift test` needs Xcode, because the Command Line Tools lack the SwiftUI macro plugin; without Xcode, the PR's `ci` run on macos-15 is the proof.
 
 Layers run system (CoreAudio and IOKit wrappers, no UI framework) -> logic (device order, hot keys, updates, install) -> ui (SwiftUI views and AppKit windows), each using only itself and the layers before it. The app is one SwiftPM target, so the compiler only stops `Writ` importing `WritTests`; `Tests/WritTests/LayerTests.swift` assigns every source file a layer and fails a wrong-way reference.
 
