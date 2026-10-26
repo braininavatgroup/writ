@@ -20,7 +20,7 @@ jobs:
   # range, and an unknown base (new branch, force push) counts as everything.
   changes:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       site: ${{ steps.diff.outputs.site }}
