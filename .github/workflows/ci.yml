@@ -20,20 +20,18 @@ jobs:
           denylist: ${{ vars.PUBLIC_TREE_DENYLIST }}
       - run: python3 site/test_site_copy.py && python3 site/test_feature_map.py && python3 tools/test_verify_signing.py
 
-  # swift test needs Xcode. Routine Xcode work runs on the Mini (BIV-1320): the
-  # Mini default arrives when native.yml is registered in the mac-xcode runner
-  # group and Bradley has enabled public repositories there; until then a
-  # hosted macOS job runs only when Bradley authorizes that run, so this lane
-  # runs on macos-15 only behind the hosted-native-ci label, and on main.
+  # Native lane on the Mini's mac-xcode group by default (BIV-1320), hosted
+  # macos-15 only behind the hosted-native-ci label on a same-repository pull
+  # request. Called at THIS repository's `main`, not by local path, on purpose:
+  # the group admits a workflow file only at refs/heads/main (agent-runtime
+  # config/mac-runners.json), and a local-path call in a pull request would
+  # define the job at the PR's merge ref. The called copy still tests this
+  # commit. The cost: a PR that edits native.yml runs main's version until it
+  # merges.
   swift-test:
-    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'hosted-native-ci')
-    runs-on: macos-15
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - run: swift test
+    uses: braininavatgroup/writ/.github/workflows/native.yml@main
+    with:
+      hosted_native: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'hosted-native-ci') }}
 
   ci:
     if: always()
@@ -46,8 +44,9 @@ jobs:
           SWIFT: ${{ needs.swift-test.result }}
         run: |
           test "$CHECK" = success || { echo "check: $CHECK"; exit 1; }
-          case "$SWIFT" in success|skipped) ;; *) echo "swift-test: $SWIFT"; exit 1 ;; esac
-          if [ "$SWIFT" = skipped ]; then echo "::notice::swift test skipped; add the hosted-native-ci label or run swift test locally."; fi
+          # The lane is owed on every same-repository PR and on main; a fork PR
+          # gets none (native.yml skips it) and fails here on purpose.
+          test "$SWIFT" = success || { echo "swift-test: $SWIFT (a fork pull request gets no native lane; push the branch to this repository)"; exit 1; }
 
   # Which deployables this push changed. The diff covers the whole pushed
   # range, and an unknown base (new branch, force push) counts as everything.
