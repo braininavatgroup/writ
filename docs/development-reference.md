@@ -161,8 +161,14 @@ a release. Output contains verdicts only, not credentials or submission history.
 
 Run it on a tag pointing to reviewed `main` that contains this workflow. For a
 credential migration, a temporary `v-signing-check-<commit>` tag permits the
-environment check without triggering `release.yml`, whose push filter accepts
-only `v` followed by a digit. Dispatch `verify-signing.yml` on that exact tag;
-record the run and commit, then delete only that temporary tag after verification.
-Do not delete old secret copies until the check succeeds. A failure is not a reason
-to weaken the environment policy or publish a test release.
+environment check; `release.yml` is a dispatch, never a tag push, so the tag
+alone builds nothing. Dispatch `verify-signing.yml` on that exact tag with the
+authorization input: `gh workflow run verify-signing.yml --ref
+v-signing-check-<commit> -f hosted_macos=true` (a hosted macOS job runs only
+when Bradley authorizes that run, BIV-1320; without the input the run fails
+with a message and verifies nothing, and a skipped `verify` job is never
+success). Record the run and commit, then delete only that temporary tag after
+verification. Do not delete old secret copies until the `verify` job itself
+succeeded. A failure is not a reason to weaken the environment policy or
+publish a test release. Releases follow the same shape: push the `v<version>`
+tag, then `gh workflow run release.yml --ref v<version> -f hosted_macos=true`.

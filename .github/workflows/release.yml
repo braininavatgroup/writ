@@ -17,6 +17,15 @@ permissions:
   contents: read
 
 jobs:
+  refuse-without-authorization:
+    if: ${{ github.ref_type != 'tag' || !inputs.hosted_macos }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: |
+          echo "::error::Nothing ran: dispatch release.yml from a v* release tag (--ref v<version>) with hosted_macos set (BIV-1320: a hosted macOS job runs only when Bradley authorizes that run). A skipped job is not a passing check."
+          exit 1
+
   ci:
     if: github.ref_type == 'tag' && inputs.hosted_macos
     runs-on: macos-15

@@ -44,6 +44,13 @@ class HostedMacos(unittest.TestCase):
         self.assertIn("runs-on: ${{ fromJSON(inputs.hosted_native && '[\"macos-15\"]' || '[\"self-hosted\",\"macOS\",\"mac-xcode\"]') }}", job)
         self.assertNotIn("ref:", job)
 
+    def test_a_dispatch_without_the_authorization_fails_loudly(self):
+        for name in ("release.yml", "verify-signing.yml"):
+            job = jobs(name)["refuse-without-authorization"]
+            self.assertIn("runs-on: ubuntu-24.04", job)
+            self.assertIn("!inputs.hosted_macos", condition(job))
+            self.assertIn("exit 1", job)
+
     def test_the_aggregate_is_the_required_check_and_deploys_wait_for_it(self):
         ci = jobs("ci.yml")
         self.assertIn("ci", ci)
