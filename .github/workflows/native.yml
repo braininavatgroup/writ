@@ -21,11 +21,17 @@ permissions:
 jobs:
   swift-test:
     # This repository is public. The Mini runs only this repository's own
-    # commits: a fork's pull request gets no native lane here, and the caller's
-    # aggregate fails closed on the skip, so a contributor pushes a branch to
-    # this repository instead. The runner group also refuses public
-    # repositories until Bradley enables it (BIV-1320).
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # commits on named events: a main push, a dispatch, or a pull request whose
+    # head is in this repository. A fork's pull request gets no native lane
+    # (any event: pull_request_review and friends also run the fork's workflow
+    # files), the caller's aggregate fails closed on the skip, and a
+    # contributor pushes a branch here instead. The runner group also refuses
+    # public repositories until Bradley enables it (BIV-1320).
+    # tools/test_workflows.py pins this gate.
+    if: >-
+      github.event_name == 'push'
+      || github.event_name == 'workflow_dispatch'
+      || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ${{ fromJSON(inputs.hosted_native && '["macos-15"]' || '["self-hosted","macOS","mac-xcode"]') }}
     timeout-minutes: 20
     steps:
