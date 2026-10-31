@@ -1,13 +1,20 @@
 name: verify-signing
+# A hosted macOS job runs only when Bradley authorizes that run (BIV-1320):
+# dispatch from a release tag with hosted_macos set.
 on:
   workflow_dispatch:
+    inputs:
+      hosted_macos:
+        description: Run on GitHub-hosted macOS (Bradley authorizes this run)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   verify:
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' && inputs.hosted_macos
     environment: release-signing
     runs-on: macos-15
     timeout-minutes: 5
