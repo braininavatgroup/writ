@@ -56,7 +56,16 @@ class HostedMacos(unittest.TestCase):
         self.assertIn("ci", ci)
         self.assertIn("needs: [check, swift-test]", ci["ci"])
         self.assertIn("needs: [ci, changes]", ci["deploy-site"])
-        self.assertNotIn("push", condition(ci["swift-test"]))
+        # The lane is owed on every same-repository PR and main push; a skipped
+        # lane (a fork PR, or the group refusing the file) fails the aggregate.
+        self.assertIn('test "$SWIFT" = success ||', ci["ci"])
+        self.assertNotIn("skipped) ;;", ci["ci"])
+
+    def test_ci_calls_the_native_lane_at_main_and_routes_hosted_only_by_label(self):
+        job = jobs("ci.yml")["swift-test"]
+        self.assertIn("uses: braininavatgroup/writ/.github/workflows/native.yml@main", job)
+        self.assertIn("hosted_native: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'hosted-native-ci') }}", job)
+        self.assertNotIn("runs-on", job)
 
 
 if __name__ == "__main__":
