@@ -14,9 +14,12 @@ is not an update feed, and a download page nobody can reach sells nothing.
 
 ## Releasing
 
-`./release.sh` builds the signed app, DMG, ZIP, and `dist/appcast.json`. The tag
-workflow tests the exact tagged commit, uploads all three files to a new
-immutable GitHub prerelease, then checks its versioned feed and DMG. Update
+`./release.sh` builds the signed app, DMG, ZIP, and `dist/appcast.json`. Push
+the tag, then dispatch `release.yml` from it with `hosted_macos` set
+(`gh workflow run release.yml --ref v<version> -f hosted_macos=true`): it tests
+the exact tagged commit, uploads all three files to a new immutable GitHub
+prerelease, then checks its versioned feed and DMG. A tag push alone builds
+nothing. Update
 `PUBLISHED_VERSION` and the landing page download copy and URL. After that site
 update is live, dispatch `promote-release.yml` with the tag; it verifies the
 deployed site before making the prerelease stable and restores the previous

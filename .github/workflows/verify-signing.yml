@@ -1,13 +1,29 @@
 name: verify-signing
+# A hosted macOS job runs only when Bradley authorizes that run (BIV-1320):
+# dispatch from a release tag with hosted_macos set.
 on:
   workflow_dispatch:
+    inputs:
+      hosted_macos:
+        description: Run on GitHub-hosted macOS (Bradley authorizes this run)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  refuse-without-authorization:
+    if: ${{ github.ref_type != 'tag' || !inputs.hosted_macos }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: |
+          echo "::error::Nothing ran: dispatch verify-signing.yml from a v* release tag (--ref v<version>) with hosted_macos set (BIV-1320: a hosted macOS job runs only when Bradley authorizes that run). A skipped job is not a passing check."
+          exit 1
+
   verify:
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' && inputs.hosted_macos
     environment: release-signing
     runs-on: macos-15
     timeout-minutes: 5

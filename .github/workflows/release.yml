@@ -1,13 +1,33 @@
 name: release
+# Bradley-started: dispatch it from the pushed release tag (`gh workflow run
+# release.yml --ref v1.2 -f hosted_macos=true`). Building, notarising and
+# publishing need GitHub-hosted macOS, and a hosted macOS job runs only when
+# Bradley authorizes that run (BIV-1320, 2026-10-31): `hosted_macos` is that
+# authorization, read by both jobs below. Signing material never reaches the
+# Mini's runners, so this workflow never joins a runner group.
 on:
-  push:
-    tags: ['v[0-9]*']
+  workflow_dispatch:
+    inputs:
+      hosted_macos:
+        description: Build and notarise this tag on GitHub-hosted macOS (Bradley authorizes this run)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  refuse-without-authorization:
+    if: ${{ github.ref_type != 'tag' || !inputs.hosted_macos }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: |
+          echo "::error::Nothing ran: dispatch release.yml from a v* release tag (--ref v<version>) with hosted_macos set (BIV-1320: a hosted macOS job runs only when Bradley authorizes that run). A skipped job is not a passing check."
+          exit 1
+
   ci:
+    if: github.ref_type == 'tag' && inputs.hosted_macos
     runs-on: macos-15
     timeout-minutes: 30
     steps:
@@ -20,6 +40,7 @@ jobs:
 
   release:
     needs: ci
+    if: github.ref_type == 'tag' && inputs.hosted_macos
     environment: release-signing
     concurrency:
       group: writ-release
@@ -41,6 +62,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9] ]] || { echo "dispatch this workflow from a v* release tag, not $GITHUB_REF" >&2; exit 1; }
           VERSION="$(cat VERSION)"
           [[ "$TAG" == "v$VERSION" ]] || { echo "tag $TAG does not match VERSION $VERSION" >&2; exit 1; }
           [[ "$(git rev-parse "$TAG^{commit}")" == "$GITHUB_SHA" ]] || { echo "tag does not resolve to the tested event commit" >&2; exit 1; }
