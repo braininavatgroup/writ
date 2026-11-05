@@ -47,7 +47,9 @@ class HostedMacos(unittest.TestCase):
     def test_a_dispatch_without_the_authorization_fails_loudly(self):
         for name in ("release.yml", "verify-signing.yml"):
             job = jobs(name)["refuse-without-authorization"]
-            self.assertIn("runs-on: ubuntu-24.04", job)
+            # Any pinned Ubuntu image, so a Renovate runner bump passes. Still
+            # refuses a moving label, a hosted macOS image or an expression.
+            self.assertRegex(job, r"(?m)^    runs-on: ubuntu-\d+\.\d+$")
             self.assertIn("!inputs.hosted_macos", condition(job))
             self.assertIn("exit 1", job)
 
