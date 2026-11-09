@@ -2,7 +2,7 @@
 """Hosted macOS runs only when Bradley authorizes the run (BIV-1320).
 
 Owner: the ci, native, release and verify-signing workflows. Retire when the
-org lint in agent-runtime covers per-event gates, or when writ has no hosted
+org lint in infra covers per-event gates, or when writ has no hosted
 macOS job left.
 """
 import re
