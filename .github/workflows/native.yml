@@ -2,7 +2,7 @@ name: native
 # Called only by ci.yml, and called AT MAIN: ci.yml references
 # braininavatgroup/writ/.github/workflows/native.yml@main, because the Mini's
 # mac-xcode runner group admits a workflow file only at refs/heads/main
-# (agent-runtime config/mac-runners.json; the Dubs pattern, DUB-158). The
+# (infra config/mac-runners.json; the Dubs pattern, DUB-158). The
 # checkout below sets no `ref:`, so the called copy still builds the caller's
 # commit. The cost: a pull request that edits this file runs main's copy until
 # it merges. Routine Xcode work runs on the Mini (BIV-1320, Bradley

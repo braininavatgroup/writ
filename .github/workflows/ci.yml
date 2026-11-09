@@ -24,7 +24,7 @@ jobs:
   # macos-15 only behind the hosted-native-ci label Bradley puts on a
   # same-repository pull request. Called at THIS repository's `main`, not by
   # local path, on purpose: the group admits a workflow file only at
-  # refs/heads/main (agent-runtime config/mac-runners.json), and a local-path
+  # refs/heads/main (infra config/mac-runners.json), and a local-path
   # call in a pull request would define the job at the PR's merge ref. The
   # called copy still tests this commit. The cost: a PR that edits native.yml
   # runs main's version until it merges.
