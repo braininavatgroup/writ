@@ -31,5 +31,7 @@ jobs:
       - name: Build and test with the image's Xcode
         run: |
           set -euo pipefail
-          xcodebuild -version | head -1
+          # No `| head`: on the hosted image xcodebuild aborts on the closed pipe
+          # (SIGPIPE, exit 134) and pipefail fails the job before swift test.
+          xcodebuild -version
           swift test
