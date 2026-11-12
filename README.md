@@ -131,7 +131,7 @@ icons, logos, or any trademark-related use.
 
 Use this repository's Issues tab for bugs. Include your macOS version, Writ version, whether the problem affects input or output, and the connection types involved. Describe the device selection you expected and the one Writ chose. Remove private device names or other personal information from screenshots and logs.
 
-For code changes, run `swift test --scratch-path .build-test` and describe any hardware behavior you verified. Tests cannot prove how every dock, headset, or AirPlay target behaves. Open a focused pull request. The `swift-test` check runs on a self-hosted Mac that does not run fork pull requests, so a PR from a fork shows `ci` failing on that check and cannot merge as it stands; the maintainer decides how to take the change. Avoid publishing signed builds or changing the update feed as part of an ordinary contribution.
+For code changes, run `swift test --scratch-path .build-test` and describe any hardware behavior you verified. Tests cannot prove how every dock, headset, or AirPlay target behaves. Open a focused pull request. The `swift-test` check does not run for fork pull requests, so a PR from a fork shows `ci` failing on that check and cannot merge as it stands; the maintainer decides how to take the change. Avoid publishing signed builds or changing the update feed as part of an ordinary contribution.
 
 ## License
 

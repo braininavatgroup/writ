@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Hosted macOS runs only when Bradley authorizes the run (BIV-1320).
+"""writ's macOS jobs: the native lane on hosted macOS, never the Mini (BIV-1608);
+release and signing only when Bradley authorizes the run (BIV-1320).
 
 Owner: the ci, native, release and verify-signing workflows. Retire when the
-org lint in infra covers per-event gates, or when writ has no hosted
-macOS job left.
+org lint in infra covers per-event gates and self-hosted targets, or when writ
+has no macOS job left.
 """
 import re
 import unittest
@@ -41,8 +42,15 @@ class HostedMacos(unittest.TestCase):
         self.assertEqual(condition(job),
             "github.event_name == 'push' || github.event_name == 'workflow_dispatch' "
             "|| (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)")
-        self.assertIn("runs-on: ${{ fromJSON(inputs.hosted_native && '[\"macos-15\"]' || '[\"self-hosted\",\"macOS\",\"mac-xcode\"]') }}", job)
+        self.assertRegex(job, r"(?m)^    runs-on: macos-\d+$")
         self.assertNotIn("ref:", job)
+
+    def test_no_workflow_targets_a_self_hosted_runner(self):
+        # writ is public: the Mini's runners can reach the login Keychain, so
+        # no writ job may run there (BIV-1608, Bradley 2026-11-12).
+        for path in sorted(WORKFLOWS.glob("*.y*ml")):
+            with self.subTest(workflow=path.name):
+                self.assertNotRegex(path.read_text(), r"self-hosted|mac-xcode|mac-keychain|mac-tools")
 
     def test_a_dispatch_without_the_authorization_fails_loudly(self):
         for name in ("release.yml", "verify-signing.yml"):
@@ -63,10 +71,11 @@ class HostedMacos(unittest.TestCase):
         self.assertIn('test "$SWIFT" = success ||', ci["ci"])
         self.assertNotIn("skipped) ;;", ci["ci"])
 
-    def test_ci_calls_the_native_lane_at_main_and_routes_hosted_only_by_label(self):
+    def test_ci_calls_this_commits_native_lane(self):
+        # A local path, so a pull request that edits native.yml tests its own copy.
         job = jobs("ci.yml")["swift-test"]
-        self.assertIn("uses: braininavatgroup/writ/.github/workflows/native.yml@main", job)
-        self.assertIn("hosted_native: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'hosted-native-ci') }}", job)
+        self.assertIn("uses: ./.github/workflows/native.yml", job)
+        self.assertNotIn("with:", job)
         self.assertNotIn("runs-on", job)
 
 
