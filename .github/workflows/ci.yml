@@ -2,8 +2,6 @@ name: ci
 on:
   pull_request:
     branches: [main]
-    # labeled/unlabeled so adding hosted-native-ci starts the Swift lane.
-    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [main]
 jobs:
@@ -20,18 +18,9 @@ jobs:
           denylist: ${{ vars.PUBLIC_TREE_DENYLIST }}
       - run: python3 site/test_site_copy.py && python3 site/test_feature_map.py && python3 tools/test_verify_signing.py && python3 tools/test_workflows.py
 
-  # Native lane on the Mini's mac-xcode group by default (BIV-1320), hosted
-  # macos-15 only behind the hosted-native-ci label Bradley puts on a
-  # same-repository pull request. Called at THIS repository's `main`, not by
-  # local path, on purpose: the group admits a workflow file only at
-  # refs/heads/main (infra config/mac-runners.json), and a local-path
-  # call in a pull request would define the job at the PR's merge ref. The
-  # called copy still tests this commit. The cost: a PR that edits native.yml
-  # runs main's version until it merges.
+  # Native lane on GitHub-hosted macOS (BIV-1608): see native.yml.
   swift-test:
-    uses: braininavatgroup/writ/.github/workflows/native.yml@main
-    with:
-      hosted_native: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'hosted-native-ci') }}
+    uses: ./.github/workflows/native.yml
 
   ci:
     if: always()

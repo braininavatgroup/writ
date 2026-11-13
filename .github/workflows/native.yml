@@ -1,45 +1,37 @@
 name: native
-# Called only by ci.yml, and called AT MAIN: ci.yml references
-# braininavatgroup/writ/.github/workflows/native.yml@main, because the Mini's
-# mac-xcode runner group admits a workflow file only at refs/heads/main
-# (infra config/mac-runners.json; the Dubs pattern, DUB-158). The
-# checkout below sets no `ref:`, so the called copy still builds the caller's
-# commit. The cost: a pull request that edits this file runs main's copy until
-# it merges. Routine Xcode work runs on the Mini (BIV-1320, Bradley
-# 2026-10-31); the hosted-native-ci label on a same-repository pull request is
-# the paid opt-in that routes the same job to GitHub-hosted macos-15.
+# Called only by ci.yml, by local path. writ is public, so its native lane runs
+# on GitHub-hosted macOS, never on the Mini's runners, which can reach the login
+# Keychain (BIV-1608, Bradley 2026-11-12); standard hosted runners cost nothing
+# in a public repository. infra's config/renovate.json hostedMacos.allowed
+# names this job, so the org lint accepts it running hosted by default. The
+# image matches release.yml, which already runs `swift test` on it.
 on:
   workflow_call:
-    inputs:
-      hosted_native:
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
 jobs:
   swift-test:
-    # This repository is public. The Mini runs only this repository's own
-    # commits on named events: a main push, a dispatch, or a pull request whose
-    # head is in this repository. A fork's pull request gets no native lane
-    # (any event: pull_request_review and friends also run the fork's workflow
-    # files), the caller's aggregate fails closed on the skip, and a
-    # contributor pushes a branch here instead. The runner group also refuses
-    # public repositories until Bradley enables it (BIV-1320).
+    # Unchanged by the move to hosted macOS: the lane runs on a main push, a
+    # dispatch, or a pull request whose head is in this repository. A fork's
+    # pull request still gets no native lane and the caller's aggregate fails
+    # closed on the skip; opening it to forks is a separate decision.
     # tools/test_workflows.py pins this gate.
     if: >-
       github.event_name == 'push'
       || github.event_name == 'workflow_dispatch'
       || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: ${{ fromJSON(inputs.hosted_native && '["macos-15"]' || '["self-hosted","macOS","mac-xcode"]') }}
+    runs-on: macos-26
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Build and test with the installed Xcode
+      - name: Build and test with the image's Xcode
         run: |
           set -euo pipefail
-          xcodebuild -version | head -1
+          # No `| head`: on the hosted image xcodebuild aborts on the closed pipe
+          # (SIGPIPE, exit 134) and pipefail fails the job before swift test.
+          xcodebuild -version
           swift test
