@@ -1,0 +1,14 @@
+name: Public-tree denylist
+description: Scan committed Git objects without logging private terms or running repository code
+inputs:
+  denylist:
+    description: Nonempty JSON array of SHA-256 word-sequence fingerprints
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Check the complete public tree
+      shell: bash
+      env:
+        PUBLIC_TREE_DENYLIST: ${{ inputs.denylist }}
+      run: python3 "$GITHUB_ACTION_PATH/public_tree_check.py" "$GITHUB_WORKSPACE"

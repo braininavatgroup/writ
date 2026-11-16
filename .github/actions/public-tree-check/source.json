@@ -1,0 +1,10 @@
+{
+  "repository": "braininavatgroup/infra",
+  "revision": "0897b78ac88b87eb7871655aad303ff4f779a67a",
+  "path": ".github/actions/public-tree-check",
+  "files": {
+    "action.yml": "ac85624616df0b3069845e020908b0753d825975aa9bd40f7dc0a169a1666da6",
+    "public_tree_check.py": "08aef4560dcde18885a5d06df38ca1c105244ae9899fcdac4a04b9709f007386",
+    "LICENSE": "f3d6e97048c12abcc09408b234af192472dcdba2b52a830ab9b745fbeacfe874"
+  }
+}
