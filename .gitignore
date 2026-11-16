@@ -15,3 +15,7 @@ __pycache__/
 # Release artefacts staged for the site — the DMG is built, not tracked
 site/public/*.dmg
 site/public/*.zip
+
+# Browser walk runtime and its local evidence
+node_modules/
+.context/

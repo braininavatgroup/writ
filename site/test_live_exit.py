@@ -44,19 +44,28 @@ if '--latest=true' in sys.argv:Path(os.environ['FIXTURE_TAG_FILE']).write_text(s
 '''
 
 
+# Stands in for the browser walk: records how tools/live ran it and exits with
+# the scenario's code (127 is bash's answer when node is not installed).
+NODE = r'''import os,sys
+with open(os.environ['NODE_LOG'],'a') as f:f.write(os.getcwd()+' '+os.environ.get('VERIFY_URL','')+' '+' '.join(sys.argv[1:])+'\n')
+sys.exit(int(os.environ.get('WALK_EXIT','0')))
+'''
+
+
 class LiveExitTest(unittest.TestCase):
     def fixture(self, directory, scenario):
         directory = Path(directory)
         bindir = directory / 'bin'
         bindir.mkdir()
-        for name, body in [('curl', CURL), ('gh', GH), ('sleep', "import os,sys\nwith open(os.environ['SLEEP_LOG'],'a') as f:f.write(' '.join(sys.argv[1:])+'\\n')\n")]:
+        for name, body in [('curl', CURL), ('gh', GH), ('node', NODE), ('sleep', "import os,sys\nwith open(os.environ['SLEEP_LOG'],'a') as f:f.write(' '.join(sys.argv[1:])+'\\n')\n")]:
             command = bindir / name
             command.write_text(f'#!{sys.executable}\n' + body)
             command.chmod(0o755)
         return {'PATH': str(bindir) + os.pathsep + os.environ['PATH'], 'HOME': str(directory),
                 'SCENARIO': scenario, 'WRIT_FIXTURE_ROOT': str(ROOT),
                 'CALL_LOG': str(directory / 'curl.log'), 'GH_LOG': str(directory / 'gh.log'),
-                'SLEEP_LOG': str(directory / 'sleep.log'), 'FIXTURE_TAG_FILE': str(directory / 'tag')}
+                'SLEEP_LOG': str(directory / 'sleep.log'), 'FIXTURE_TAG_FILE': str(directory / 'tag'),
+                'NODE_LOG': str(directory / 'node.log')}
 
     def test_actual_cli_contract_and_bounded_fresh_retry(self):
         for scenario, expected in [('pass', 0), ('wrong', 1), ('down', 3), ('flip', 3),
@@ -83,6 +92,21 @@ class LiveExitTest(unittest.TestCase):
                 if scenario in ('missing-map', 'invalid-settle'):
                     self.assertEqual(calls, [], 'missing local input must not start production probes')
                 self.assertFalse(Path(env['GH_LOG']).exists(), 'live must never invoke the release writer')
+                self.assertFalse(Path(env['NODE_LOG']).exists(), 'site, which the release callers run, must not need a browser')
+
+    def test_browser_surface_reports_the_walks_exit(self):
+        # 0 rendered as committed, 1 wrong after one settle and retry, and
+        # anything else (the walk's 3, or no node at all) unavailable.
+        for walk_exit, expected, walks in [('0', 0, 1), ('1', 1, 2), ('3', 3, 1), ('127', 3, 1)]:
+            with self.subTest(walk_exit=walk_exit), tempfile.TemporaryDirectory() as directory:
+                env = self.fixture(directory, 'pass')
+                env['WALK_EXIT'] = walk_exit
+                result = subprocess.run(['bash', str(ROOT / 'tools/live'), 'browser'], cwd=ROOT / 'site', env=env,
+                                        capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                runs = Path(env['NODE_LOG']).read_text().splitlines()
+                self.assertEqual(runs, [f'{ROOT} https://writ.braininavat.dance tools/browser-walk.mjs'] * walks)
+                self.assertFalse(Path(env['CALL_LOG']).exists(), 'the browser surface makes no HTTP checks of its own')
 
     def test_actual_release_caller_does_not_restore_for_unavailable_observation(self):
         for scenario, expected, writes in [('pass', 0, 2), ('wrong', 1, 5), ('down', 3, 2), ('promotion-fail', 3, 1)]:

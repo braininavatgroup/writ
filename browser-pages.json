@@ -1,0 +1,13 @@
+{
+  "pages": [
+    {
+      "path": "/",
+      "assertions": [
+        { "selector": "#hero-title", "text": "Your mic should know when the lid is shut." },
+        { "selector": "a.download-button", "text": "Download for Mac" }
+      ]
+    },
+    { "path": "/privacy/", "assertions": [{ "selector": "h1", "text": "Privacy Policy" }] },
+    { "path": "/eula/", "assertions": [{ "selector": "h1", "text": "Licence terms" }] }
+  ]
+}

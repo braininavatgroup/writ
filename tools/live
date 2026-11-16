@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Read-only check that production matches the committed deployables.
-#   tools/live [site]    one line per check, non-zero exit on any failure
+#   tools/live [site] [browser]    one line per check, non-zero exit on any failure
+# site (the default) reads pages, links, assets and the release feed over HTTP;
+# browser walks browser-pages.json in headless Chromium after npm ci.
 # Exit0 pass,1 wrong after one fresh retry,3 unavailable/input failure.
 # LIVE_SETTLE_SECONDS bounds the single propagation wait (default15,max350).
 set -uo pipefail
@@ -109,6 +111,18 @@ site() {
 
 }
 
+# A signed-out headless Chromium walk of every page in browser-pages.json
+# through the read-only guard in tools/read-only-browser.js. Its exit is this
+# script's: 0 rendered as committed, 1 wrong, 3 unavailable (no browser, page
+# or evidence). Screenshots and result.json stay in .context/verification.
+browser_walk() {
+  (cd "$root" && VERIFY_URL=https://writ.braininavat.dance node tools/browser-walk.mjs)
+}
+
+browser() {
+  check "site browser walk" browser_walk
+}
+
 # Follow the stable Pages redirect, validate the release feed, then download
 # and hash the actual DMG. Before the first release, a missing feed is allowed
 # for ordinary site deploys; release jobs set LIVE_REQUIRE_RELEASE=1.
@@ -184,7 +198,8 @@ for s in "${surfaces[@]}"; do
   case $s in
     map) ;;
     site) site ;;
-    *) echo "DOWN unknown surface $s (known: map, site)"; unavailable=$((unavailable + 1)) ;;
+    browser) browser ;;
+    *) echo "DOWN unknown surface $s (known: map, site, browser)"; unavailable=$((unavailable + 1)) ;;
   esac
 done
 echo "live: $passes passed, $failures failed, $unavailable unavailable"
