@@ -13,7 +13,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Public-tree denylist
-        uses: braininavatgroup/agent-operating-policy/.github/actions/public-tree-check@b8c552c8c595504eb3090042422b0e617c4c726b
+        uses: braininavatgroup/writ/.github/actions/public-tree-check@a2a0fc69544beb4b5b74bea81c9b2b60040e9a2d
         with:
           denylist: ${{ vars.PUBLIC_TREE_DENYLIST }}
       - run: python3 site/test_site_copy.py && python3 site/test_feature_map.py && python3 tools/test_verify_signing.py && python3 tools/test_workflows.py
