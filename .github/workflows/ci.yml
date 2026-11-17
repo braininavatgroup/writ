@@ -27,6 +27,26 @@ jobs:
         with:
           denylist: ${{ vars.PUBLIC_TREE_DENYLIST }}
       - run: python3 site/test_site_copy.py && python3 site/test_feature_map.py && python3 tools/test_verify_signing.py && python3 tools/test_workflows.py
+      # The same Node, npm ci and Chromium install deploy-site.yml runs after a
+      # deploy, then the deployed walk against the committed pages.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.1
+          cache: npm
+      - run: npm ci
+      - name: Exercise the deployed browser install
+        run: npx playwright install --with-deps chromium
+      - name: Walk the committed site in the deployed browser
+        run: node --test tools/browser-walk.test.mjs
+      - name: Retain browser evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: browser-walk-${{ github.sha }}
+          path: .context/verification/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
 
   # Native lane on GitHub-hosted macOS (BIV-1608): see native.yml.
   swift-test:
@@ -71,7 +91,7 @@ jobs:
             git ls-files > "$RUNNER_TEMP/changed"
           fi
           changed() { if grep -Eq "$2" "$RUNNER_TEMP/changed"; then echo "$1=true"; else echo "$1=false"; fi >> "$GITHUB_OUTPUT"; }
-          changed site '^(site/|features/|tools/(live|check_feature_map\.py)$|\.github/workflows/deploy-site\.yml$)'
+          changed site '^(site/|features/|tools/(live|check_feature_map\.py|browser-walk\.mjs|read-only-browser\.js)$|browser-pages\.json$|package(-lock)?\.json$|\.github/workflows/deploy-site\.yml$)'
 
   # Deploys ship only after the checks above pass, from the SHA they tested.
   deploy-site:
